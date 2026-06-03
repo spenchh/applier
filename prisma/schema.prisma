@@ -1,3 +1,14 @@
+// InternPilot Prisma schema
+//
+// Local development uses SQLite. For production, switch `provider` to
+// "postgresql" and update DATABASE_URL. The schema is intentionally written to
+// be Postgres-portable:
+//   - "enums" are String columns validated by Zod + TS const unions at the
+//     service boundary (SQLite has no enum type).
+//   - list/array values are stored as JSON strings in `*Json` columns with
+//     typed accessors in the service layer (SQLite has no array type).
+// Swapping to native Postgres enums/arrays later is a focused, additive change.
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,299 +18,334 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model UserAccount {
-  id           String        @id @default(cuid())
-  email        String        @unique
-  displayName  String?
-  passwordHash String
-  passwordSalt String
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-
-  jobs     JobPosting[]
-  profiles UserProfile[]
-  sessions UserSession[]
-}
-
-model UserSession {
-  id            String      @id @default(cuid())
-  userAccountId String
-  tokenHash     String      @unique
-  expiresAt     DateTime
-  createdAt     DateTime    @default(now())
-
-  userAccount UserAccount @relation(fields: [userAccountId], references: [id], onDelete: Cascade)
-}
+// ---------------------------------------------------------------------------
+// Profile + Truth Vault
+// ---------------------------------------------------------------------------
 
 model UserProfile {
-  id                  String    @id @default(cuid())
-  userAccountId       String?   @unique
-  legalName           String
-  preferredName       String?
-  email               String
-  phone               String?
-  location            String?
-  school              String?
-  degree              String?
-  major               String?
-  minor               String?
-  graduationDate      DateTime?
-  gpa                 String?
-  workAuthorization   String?
-  careerInterests     String?
-  sponsorshipRequired Boolean   @default(false)
-  earliestStartDate   DateTime?
-  preferredTerms      String    @default("[]")
-  preferredLocations  String    @default("[]")
-  remotePreference    String?
-  portfolioUrl        String?
-  githubUrl           String?
-  linkedinUrl         String?
-  websiteUrl          String?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  id                 String   @id @default(cuid())
+  legalName          String
+  preferredName      String?
+  email              String
+  phone              String?
+  // Sensitive free-text fields are encrypted at rest via the app's encryption
+  // helper before being written here (see src/lib/encryption.ts).
+  location           String?
+  school             String?
+  degree             String?
+  major              String?
+  minor              String?
+  graduationDate     DateTime?
+  gpa                String? // stored as string; optional and sometimes ranged
+  workAuthorization  String? // verified eligibility fact — user-entered only
+  sponsorshipRequired Boolean @default(false)
+  earliestStartDate  DateTime?
+  preferredTerms     String? // JSON string[] e.g. ["Summer 2026"]
+  preferredLocations String? // JSON string[]
+  remotePreference   String? // "remote" | "hybrid" | "onsite" | "any"
+  portfolioUrl       String?
+  githubUrl          String?
+  linkedinUrl        String?
+  websiteUrl         String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  applications Application[]
   facts        ProfileFact[]
-  files        FileAsset[]
   resumes      Resume[]
-  userAccount  UserAccount? @relation(fields: [userAccountId], references: [id], onDelete: Cascade)
+  applications Application[]
+  fileAssets   FileAsset[]
 }
 
 model ProfileFact {
-  id                 String    @id @default(cuid())
-  userProfileId      String
-  type               String
-  title              String
-  organization       String?
-  location           String?
-  startDate          DateTime?
-  endDate            DateTime?
-  description        String
-  impact             String?
-  skills             String    @default("[]")
-  evidenceNote       String?
-  resumeAllowed      Boolean   @default(true)
-  coverLetterAllowed Boolean   @default(true)
-  answersAllowed     Boolean   @default(true)
-  verified           Boolean   @default(false)
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  id            String   @id @default(cuid())
+  userProfileId String
+  type          String // experience | education | project | award | coursework | skill | certification | club | leadership | publication | hackathon | volunteer | language
+  title         String
+  organization  String?
+  location      String?
+  startDate     DateTime?
+  endDate       DateTime?
+  description   String?
+  impact        String? // measurable impact
+  skills        String? // JSON string[]
+  evidenceNote  String? // evidence / source note
+  resumeAllowed     Boolean @default(true)
+  coverLetterAllowed Boolean @default(true)
+  answersAllowed    Boolean @default(true)
+  verified      Boolean @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   userProfile UserProfile @relation(fields: [userProfileId], references: [id], onDelete: Cascade)
+
+  @@index([userProfileId])
+  @@index([type])
 }
 
+// ---------------------------------------------------------------------------
+// Resumes
+// ---------------------------------------------------------------------------
+
 model Resume {
-  id             String          @id @default(cuid())
+  id             String   @id @default(cuid())
   userProfileId  String
   name           String
-  baseType       String
-  rawText        String
-  structuredJson String?
-  isMaster       Boolean         @default(false)
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  baseType       String // software-engineering | data-science | product-management | finance | consulting | research | general
+  rawText        String?
+  structuredJson String? // JSON of ResumeStructure
+  isMaster       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   userProfile UserProfile     @relation(fields: [userProfileId], references: [id], onDelete: Cascade)
   versions    ResumeVersion[]
+
+  @@index([userProfileId])
 }
 
 model ResumeVersion {
-  id                  String       @id @default(cuid())
+  id                  String   @id @default(cuid())
   resumeId            String
   jobPostingId        String?
   applicationId       String?
   name                String
-  tailoredText        String
-  structuredJson      String?
+  tailoredText        String?
+  structuredJson      String? // JSON of ResumeStructure
   htmlPreview         String?
   pdfPath             String?
   docxPath            String?
-  truthCheckJson      String?
-  keywordCoverageJson String?
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
+  truthCheckJson      String? // JSON of TruthCheckResult
+  keywordCoverageJson String? // JSON of KeywordCoverage
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
-  application Application? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
-  jobPosting  JobPosting?  @relation(fields: [jobPostingId], references: [id], onDelete: SetNull)
   resume      Resume       @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  application Application? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+
+  @@index([resumeId])
+  @@index([jobPostingId])
+  @@index([applicationId])
 }
 
+// ---------------------------------------------------------------------------
+// Companies + Jobs
+// ---------------------------------------------------------------------------
+
 model Company {
-  id        String       @id @default(cuid())
+  id        String   @id @default(cuid())
   name      String
   website   String?
   domain    String?
   industry  String?
   size      String?
   notes     String?
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  jobs JobPosting[]
+  jobPostings JobPosting[]
+
+  @@index([name])
 }
 
 model JobPosting {
-  id                      String          @id @default(cuid())
-  userAccountId           String?
-  companyId               String
-  title                   String
-  location                String?
-  workplaceType           String?
-  internshipTerm          String?
-  sourceUrl               String?
-  sourceName              String?
-  atsProvider             String?
-  rawDescription          String
-  parsedJson              String?
-  requiredQualifications  String          @default("[]")
-  preferredQualifications String          @default("[]")
-  responsibilities        String          @default("[]")
-  technologies            String          @default("[]")
-  keywords                String          @default("[]")
-  compensation            String?
-  deadline                DateTime?
-  riskFlagsJson           String          @default("[]")
-  dedupeHash              String
-  importedAt              DateTime        @default(now())
-  createdAt               DateTime        @default(now())
-  updatedAt               DateTime        @updatedAt
+  id                     String   @id @default(cuid())
+  companyId              String
+  title                  String
+  location               String?
+  workplaceType          String? // remote | hybrid | onsite
+  internshipTerm         String?
+  sourceUrl              String?
+  sourceName             String? // job board / source label
+  atsProvider            String? // greenhouse | lever | ashby | smartrecruiters | unknown
+  rawDescription         String?
+  parsedJson             String? // JSON of ParsedJob
+  requiredQualifications String? // JSON string[]
+  preferredQualifications String? // JSON string[]
+  responsibilities       String? // JSON string[]
+  technologies           String? // JSON string[]
+  keywords               String? // JSON string[]
+  compensation           String?
+  deadline               DateTime?
+  riskFlagsJson          String? // JSON of RiskFlag[]
+  dedupeHash             String? // for deduplication
+  importedAt             DateTime @default(now())
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 
-  applications   Application[]
-  company        Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  questions      JobQuestion[]
-  resumeVersions ResumeVersion[]
-  userAccount    UserAccount?    @relation(fields: [userAccountId], references: [id], onDelete: Cascade)
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  questions    JobQuestion[]
+  applications Application[]
+
+  @@index([companyId])
+  @@index([dedupeHash])
 }
 
 model JobQuestion {
-  id            String              @id @default(cuid())
-  jobPostingId  String
-  questionText  String
-  questionType  String              @default("text")
-  required      Boolean             @default(false)
-  optionsJson   String?
-  sensitive     Boolean             @default(false)
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
+  id           String   @id @default(cuid())
+  jobPostingId String
+  questionText String
+  questionType String // text | textarea | select | multiselect | boolean | file | eligibility | demographic
+  required     Boolean  @default(false)
+  optionsJson  String? // JSON string[] of options for select types
+  sensitive    Boolean  @default(false) // demographic / eligibility / self-id
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
+  jobPosting JobPosting          @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
   answers    ApplicationAnswer[]
-  jobPosting JobPosting         @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+
+  @@index([jobPostingId])
 }
 
+// ---------------------------------------------------------------------------
+// Applications
+// ---------------------------------------------------------------------------
+
 model Application {
-  id              String    @id @default(cuid())
+  id              String   @id @default(cuid())
   userProfileId   String
   jobPostingId    String
-  status          String    @default("drafted")
-  applicationMode String    @default("manual")
-  fitScore        Int       @default(0)
-  fitAnalysisJson String?
+  status          String   @default("saved") // see APPLICATION_STATUSES
+  applicationMode String   @default("manual") // manual | adapter | email
+  fitScore        Int?
+  fitAnalysisJson String? // JSON of FitAnalysis
   approvedAt      DateTime?
   submittedAt     DateTime?
   source          String?
   notes           String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  // Resume/cover-letter version labels used for analytics.
+  resumeVersionLabel String?
+  referralContact    String?
+  recruiterContact   String?
+  followUpDate       DateTime?
+  outcome            String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  answers            ApplicationAnswer[]
-  coverLetters       CoverLetter[]
-  files              FileAsset[]
-  followUps          FollowUpTask[]
-  jobPosting         JobPosting          @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
-  resumeVersions     ResumeVersion[]
-  submissionAttempts SubmissionAttempt[]
-  userProfile        UserProfile         @relation(fields: [userProfileId], references: [id], onDelete: Cascade)
+  userProfile    UserProfile         @relation(fields: [userProfileId], references: [id], onDelete: Cascade)
+  jobPosting     JobPosting          @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+  answers        ApplicationAnswer[]
+  coverLetters   CoverLetter[]
+  resumeVersions ResumeVersion[]
+  fileAssets     FileAsset[]
+  attempts       SubmissionAttempt[]
+  followUps      FollowUpTask[]
+
+  @@index([userProfileId])
+  @@index([jobPostingId])
+  @@index([status])
 }
 
 model ApplicationAnswer {
-  id                   String       @id @default(cuid())
-  applicationId         String
-  jobQuestionId         String?
-  answerText            String
-  supportingFactIdsJson String       @default("[]")
-  truthCheckStatus      String       @default("needs_user_input")
-  userApproved          Boolean      @default(false)
-  createdAt             DateTime     @default(now())
-  updatedAt             DateTime     @updatedAt
+  id                  String   @id @default(cuid())
+  applicationId       String
+  jobQuestionId       String?
+  // For ad-hoc / synthesized questions not tied to a JobQuestion row:
+  questionLabel       String?
+  answerText          String
+  supportingFactIdsJson String? // JSON string[] of ProfileFact ids
+  truthCheckStatus    String   @default("unknown") // supported | weak | unsupported | sensitive | needs-input | unknown
+  confidence          String? // high | medium | low
+  sensitive           Boolean  @default(false)
+  needsUserInput      Boolean  @default(false)
+  userApproved        Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
-  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  application Application  @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   jobQuestion JobQuestion? @relation(fields: [jobQuestionId], references: [id], onDelete: SetNull)
+
+  @@index([applicationId])
 }
 
 model CoverLetter {
-  id                   String      @id @default(cuid())
+  id                    String   @id @default(cuid())
   applicationId         String
-  text                 String
-  supportingFactIdsJson String      @default("[]")
-  createdAt            DateTime    @default(now())
-  updatedAt            DateTime    @updatedAt
+  text                  String
+  supportingFactIdsJson String? // JSON string[]
+  unsupportedClaimsJson String? // JSON string[]
+  userApproved          Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
 }
 
 model FileAsset {
   id            String   @id @default(cuid())
   userProfileId String?
   applicationId String?
-  type          String
+  type          String // resume | cover-letter | transcript | other | email-draft
   filename      String
   path          String
-  mimeType      String?
-  size          Int?
+  mimeType      String
+  size          Int
   createdAt     DateTime @default(now())
 
-  application Application? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   userProfile UserProfile? @relation(fields: [userProfileId], references: [id], onDelete: SetNull)
+  application Application? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
 }
 
+// ---------------------------------------------------------------------------
+// Submission, audit, follow-ups, settings
+// ---------------------------------------------------------------------------
+
 model SubmissionAttempt {
-  id                  String      @id @default(cuid())
-  applicationId        String
-  adapter              String
-  status               String
-  requestSummaryJson   String?
-  responseSummaryJson  String?
-  errorMessage         String?
-  createdAt            DateTime    @default(now())
+  id                  String   @id @default(cuid())
+  applicationId       String
+  adapter             String // manual | email | greenhouse | lever | ashby | smartrecruiters
+  status              String // success | error | fallback | duplicate | rate-limited | exported | pending
+  requestSummaryJson  String? // sanitized summary — never full resumes/secrets
+  responseSummaryJson String?
+  errorMessage        String?
+  createdAt           DateTime @default(now())
 
   application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
 }
 
 model AuditLog {
   id           String   @id @default(cuid())
   entityType   String
   entityId     String
-  action       String
-  metadataJson String?
+  action       String // e.g. generate.resume | approve.application | submit.application
+  metadataJson String? // sanitized metadata only
   createdAt    DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([action])
 }
 
 model FollowUpTask {
-  id            String      @id @default(cuid())
+  id            String   @id @default(cuid())
   applicationId String
   title         String
   dueDate       DateTime?
-  completed     Boolean     @default(false)
+  completed     Boolean  @default(false)
   notes         String?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
 }
 
+// Single-row application settings (provider + compliance configuration).
 model AppSettings {
-  id                        String   @id @default("singleton")
-  llmProvider               String   @default("mock")
-  aiModel                   String?
-  aiInstructions            String?
-  defaultResumeTemplate     String   @default("software_engineering")
-  targetRoleTypes           String   @default("[]")
-  targetIndustries          String   @default("[]")
-  excludedKeywords          String   @default("[]")
-  disableSubmissionAdapters Boolean  @default(false)
-  requireReview             Boolean  @default(true)
-  maxApplicationsPerDay     Int      @default(10)
-  createdAt                 DateTime @default(now())
-  updatedAt                 DateTime @updatedAt
+  id                       String   @id @default("singleton")
+  llmProvider              String   @default("mock") // mock | anthropic | openai
+  defaultResumeTemplate    String   @default("general")
+  // Compliance guardrails. `requireReviewBeforeSubmission` is intentionally
+  // locked on and the UI does not allow disabling it.
+  requireReviewBeforeSubmission Boolean @default(true)
+  submissionAdaptersDisabled    Boolean @default(true)
+  maxApplicationsPerDay         Int     @default(15) // quality-control only
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
 }

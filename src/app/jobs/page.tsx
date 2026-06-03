@@ -1,110 +1,117 @@
 import Link from "next/link";
-import { createJobAction } from "@/app/actions";
-import { SubmitButton } from "@/components/submit-button";
-import { Badge, EmptyState, PageHeader, Panel, inputClass, labelClass } from "@/components/ui";
-import { requireUser } from "@/lib/auth";
-import { toList } from "@/lib/json";
-import { listJobs } from "@/lib/services/job";
-import { getSettings } from "@/lib/services/settings";
-import { isRestrictedPlatform, roleCategories, roleCategoryLabel } from "@/lib/text";
+import { Inbox, Plus, MapPin, ExternalLink } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
+import { EmptyState } from "@/components/empty-state";
+import { StatusBadge, FitScoreBadge } from "@/components/status-badge";
+import { RiskCountBadge } from "@/components/risk-flags";
+import { db } from "@/lib/db";
+import { parseJson, parseStringList, humanize, formatRelativeDeadline, truncate, cn } from "@/lib/utils";
+import { isRestrictedPlatform } from "@/lib/url";
+import type { RiskFlag } from "@/lib/llm/types";
 
 export const dynamic = "force-dynamic";
 
 export default async function JobsPage() {
-  const user = await requireUser("/jobs");
-  const [jobs, settings] = await Promise.all([listJobs(user.id), getSettings()]);
-  const targetRoles = toList(settings.targetRoleTypes);
-  const targetIndustries = toList(settings.targetIndustries);
-  return (
-    <>
-      <PageHeader title="Job Inbox" eyebrow="Import and triage" />
-      <div className="grid gap-6 xl:grid-cols-[.9fr_1.1fr]">
-        <Panel>
-          <h2 className="mb-4 text-lg font-semibold">Add job posting</h2>
-          <div className="mb-4 rounded-md border border-[var(--line)] bg-stone-50 p-3 text-sm text-stone-700">
-            <p className="font-medium">Current targets</p>
-            <p>{targetRoles.length ? targetRoles.join(", ") : "Any role family"}</p>
-            <p>{targetIndustries.length ? targetIndustries.join(", ") : "Any industry"}</p>
-          </div>
-          <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
-            <p className="font-medium">Job-board inspired import</p>
-            <p>Paste descriptions or URLs from LinkedIn, Indeed, Handshake, school boards, and company career pages. Restricted boards stay Manual Mode, but InternPilot will still parse requirements and tailor your materials.</p>
-          </div>
-          <form action={createJobAction} className="grid gap-4">
-            <label className={labelClass}>
-              Source URL
-              <input name="sourceUrl" className={inputClass} type="url" placeholder="https://..." />
-            </label>
-            <div className="grid gap-4 md:grid-cols-2">
-              <label className={labelClass}>
-                Company
-                <input name="company" className={inputClass} />
-              </label>
-              <label className={labelClass}>
-                Role title
-                <input name="title" className={inputClass} />
-              </label>
-              <label className={labelClass}>
-                Role family
-                <select name="roleCategory" className={inputClass} defaultValue="general_internship">
-                  {roleCategories.map((category) => (
-                    <option key={category} value={category}>
-                      {roleCategoryLabel(category)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className={labelClass}>
-                Location
-                <input name="location" className={inputClass} />
-              </label>
-              <label className={labelClass}>
-                Source name
-                <input name="sourceName" className={inputClass} list="job-source-options" placeholder="LinkedIn, Indeed, Handshake, Greenhouse" />
-              </label>
-            </div>
-            <label className={labelClass}>
-              Job description
-              <textarea name="rawDescription" className={inputClass} rows={14} required />
-            </label>
-            <datalist id="job-source-options">
-              {["LinkedIn", "Indeed", "Handshake", "Company careers page", "Greenhouse", "Lever", "Ashby", "SmartRecruiters", "School career center"].map((source) => (
-                <option key={source} value={source} />
-              ))}
-            </datalist>
-            <SubmitButton>Parse job</SubmitButton>
-          </form>
-        </Panel>
+  const jobs = await db.jobPosting.findMany({
+    include: { company: true, applications: true },
+    orderBy: { importedAt: "desc" },
+  });
 
+  return (
+    <div>
+      <PageHeader
+        title="Job Inbox"
+        description="Imported postings with parsed details, fit, and risk indicators. Deduplicated by company, title, location, and description."
+      >
+        <Link href="/jobs/new" className={buttonVariants()}>
+          <Plus className="size-4" /> Add a job
+        </Link>
+      </PageHeader>
+
+      {jobs.length === 0 ? (
+        <EmptyState
+          icon={Inbox}
+          title="Your inbox is empty"
+          description="Paste a job description or import from a public ATS URL to analyze fit and tailor your materials."
+          actionLabel="Add your first job"
+          actionHref="/jobs/new"
+        />
+      ) : (
         <div className="grid gap-3">
-          {jobs.length ? (
-            jobs.map((job) => {
-              const risks = toList(job.riskFlagsJson);
-              return (
-                <Link key={job.id} href={`/jobs/${job.id}`} className="block rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm hover:bg-[#f8f8f2]">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-semibold">{job.title}</p>
-                      <p className="text-sm text-[var(--muted)]">{job.company.name}</p>
+          {jobs.map((job) => {
+            const flags = parseJson<RiskFlag[]>(job.riskFlagsJson, []);
+            const tech = parseStringList(job.technologies).slice(0, 6);
+            const app = job.applications[0];
+            const restricted = job.sourceUrl ? isRestrictedPlatform(job.sourceUrl) : false;
+            return (
+              <Card key={job.id} className="transition-colors hover:border-primary/40">
+                <CardContent className="p-5">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0 space-y-1">
+                      <Link href={`/jobs/${job.id}`} className="block">
+                        <h3 className="truncate text-base font-semibold hover:underline">
+                          {job.title} · <span className="text-muted-foreground">{job.company.name}</span>
+                        </h3>
+                      </Link>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                        {job.location ? (
+                          <span className="flex items-center gap-1">
+                            <MapPin className="size-3" /> {job.location}
+                          </span>
+                        ) : null}
+                        {job.workplaceType ? <Badge variant="outline">{humanize(job.workplaceType)}</Badge> : null}
+                        {job.internshipTerm ? <span>{job.internshipTerm}</span> : null}
+                        {job.atsProvider && job.atsProvider !== "unknown" ? (
+                          <Badge variant="muted">{humanize(job.atsProvider)}</Badge>
+                        ) : null}
+                        {restricted ? <Badge variant="warning">Manual-only platform</Badge> : null}
+                      </div>
                     </div>
-                    {isRestrictedPlatform(job.sourceUrl) ? <Badge tone="warn">manual only</Badge> : job.atsProvider ? <Badge tone="info">{job.atsProvider}</Badge> : <Badge>manual</Badge>}
+                    <div className="flex shrink-0 flex-wrap items-center gap-2">
+                      <RiskCountBadge flags={flags} />
+                      {app ? <StatusBadge status={app.status} /> : <Badge variant="muted">Not started</Badge>}
+                      {app ? <FitScoreBadge score={app.fitScore} /> : null}
+                    </div>
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {toList(job.keywords).slice(0, 7).map((keyword) => (
-                      <Badge key={keyword} tone="info">
-                        {keyword}
-                      </Badge>
-                    ))}
-                    {risks.length ? <Badge tone="warn">{risks.length} risk flags</Badge> : <Badge tone="good">no obvious flags</Badge>}
+
+                  {job.rawDescription ? (
+                    <p className="mt-2 text-sm text-muted-foreground">{truncate(job.rawDescription, 180)}</p>
+                  ) : null}
+
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap gap-1.5">
+                      {tech.map((t) => (
+                        <Badge key={t} variant="secondary">
+                          {t}
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      {job.deadline ? <span>{formatRelativeDeadline(job.deadline)}</span> : null}
+                      {job.sourceUrl ? (
+                        <a
+                          href={job.sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 hover:text-foreground"
+                        >
+                          <ExternalLink className="size-3" /> Source
+                        </a>
+                      ) : null}
+                      <Link href={`/jobs/${job.id}`} className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+                        View &amp; tailor
+                      </Link>
+                    </div>
                   </div>
-                </Link>
-              );
-            })
-          ) : (
-            <EmptyState title="No jobs imported" body="Paste a posting, official ATS URL, or manually create a job to begin." />
-          )}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
-      </div>
-    </>
+      )}
+    </div>
   );
 }

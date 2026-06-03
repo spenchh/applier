@@ -1,130 +1,268 @@
 # InternPilot
 
-InternPilot is a local-first internship application command center. It helps a student store verified profile facts, import postings, score fit, generate truthful application packets, review every claim, and track outcomes.
+A human-in-the-loop **internship application command center**. InternPilot helps a
+student store their verified background, import postings, analyze fit, tailor
+materials **truthfully**, review every packet, and track outcomes — without ever
+fabricating facts, scraping restricted platforms, or auto-submitting anything.
 
-## What It Does
+> **This is not a spam bot.** Every application requires your explicit review and
+> approval before anything is submitted or exported. That guardrail is locked on
+> and cannot be disabled.
 
-- Supports email/password sign-in with remembered sessions, then stores profile basics, resumes, verified facts, skills, projects, education, work history, and eligibility facts per account.
-- Imports postings from pasted descriptions, manual fields, URLs, and official ATS-style URLs where appropriate.
-- Parses jobs with a mock LLM provider that works without paid API keys.
-- Lets users set target role families and industries, including software, data, product, design/UX, marketing, finance, consulting, research, operations, policy/legal, communications, sales, HR, and general internships.
-- Provides an AI wrapper configuration layer for mock, OpenAI, or Anthropic-backed generation while keeping truth checks provider-independent.
-- Scores fit against the Truth Vault.
-- Generates tailored resume text, cover letters, application answers, recruiter-style notes, truth checks, and keyword coverage.
-- Requires explicit review and approval before submission or export.
-- Tracks applications through saved, drafted, review, approved, submitted, assessment, interview, offer, rejection, withdrawal, and archive states.
-- Exports application tracker CSV and local JSON data.
+---
 
-## What It Intentionally Does Not Do
+## What it does
 
-- No scraping of LinkedIn, Indeed, Handshake, Simplify, RippleMatch, or restricted platforms.
-- No CAPTCHA, login, hidden-field, anti-bot, rate-limit, or terms bypassing.
-- No background auto-apply workflow.
-- No automatic demographic, disability, veteran, citizenship, sponsorship, or legal eligibility answers.
-- No fabricated skills, metrics, awards, employment, GPA, dates, authorization, or credentials.
+- **Profile & Truth Vault** — store verified facts (experience, projects,
+  education, skills, awards, leadership, …). This is the *only* source the AI may
+  use when tailoring. Each fact controls whether it may appear on a resume, in
+  cover letters, and in answers.
+- **Resume Manager** — paste a master resume; it's parsed into ATS-friendly
+  sections. Preview and print to PDF from the browser.
+- **Job Inbox** — add jobs by pasting a description, importing from a public ATS
+  URL (Greenhouse/Lever), manual entry, or CSV. Jobs are parsed, deduplicated,
+  and screened for **risk indicators**.
+- **Job Detail** — fit score, matched/missing qualifications, keywords, risk
+  flags, recommended resume template, required materials, and application
+  questions.
+- **Tailoring Studio** — generates a tailored resume, cover letter, and
+  short-answer responses. Every claim **cites the facts it used**. A
+  **truth check** classifies claims as supported / weak / unsupported, and an
+  **ATS keyword coverage** panel shows what's present, missing, and intentionally
+  omitted (because unsupported).
+- **Review Queue** — batch workflow: review each packet one at a time; approve,
+  edit, skip, or archive.
+- **Submission Screen** — shows the exact fields and files that will be submitted
+  or copied, separates consent/sensitive fields, includes a compliance checklist,
+  and requires a final accuracy confirmation. Three modes: **Manual**, **Email**,
+  and **Official Adapter** (with graceful fallback to Manual).
+- **Tracker** — Kanban + table views across the full pipeline, with CSV export.
+- **Analytics** — funnel, response/interview/offer rates, applications by week,
+  top sources, resume-version performance, deadline misses, time-to-response.
+- **Settings** — LLM provider, default template, compliance controls, data
+  export, and delete-all.
 
-## Local Setup
+## What it intentionally does **not** do
+
+InternPilot is designed to make you faster and more organized — never dishonest
+or banned. By design it will **not**:
+
+- Scrape LinkedIn, Indeed, Handshake, Simplify, RippleMatch, Glassdoor, or any
+  site that prohibits automated access. Those URLs are stored for tracking and
+  forced into **Manual Mode** (open & apply yourself).
+- Bypass CAPTCHAs, login gates, email/phone verification, rate limits, anti-bot
+  controls, paywalls, or hidden anti-abuse fields.
+- Use stealth browser automation or auto-click/apply/message anywhere.
+- Create fake accounts or impersonate recruiters, employers, or schools.
+- Auto-submit applications, or run any "background auto-apply everything" feature.
+- Fabricate experience, skills, credentials, awards, GPA, graduation date, work
+  authorization, location, availability, citizenship, visa/sponsorship status, or
+  demographic / disability / veteran information.
+- Auto-answer voluntary demographic / self-identification questions.
+- Answer legal eligibility questions unless you've explicitly stored a verified
+  fact **and** confirm it per application.
+
+It surfaces posting **risk indicators** but never claims a posting is "safe."
+
+---
+
+## Tech stack
+
+- **Next.js 15** (App Router) + **TypeScript**
+- **Tailwind CSS** + a small shadcn-style component kit (CVA + tailwind-merge)
+- **Prisma ORM** — SQLite locally, Postgres-portable schema
+- **React Hook Form**-friendly forms + **Zod** validation at every boundary
+- **Server Actions** for mutations; route handlers for exports/previews
+- **Vitest** for tests
+- Clean **service-layer architecture** (`src/lib/services`, `src/lib/adapters`,
+  `src/lib/llm`)
+- LLM provider abstraction with a **mock** provider — runs the full demo with
+  **zero API keys**
+
+---
+
+## Local setup
 
 ```bash
+# 1. Install dependencies
 npm install
-cp .env.example .env
-npm run db:generate
-npm run db:init
+
+# 2. Configure environment
+cp .env.example .env        # defaults work out of the box (mock provider + SQLite)
+
+# 3. Create the database and apply the schema
+npx prisma migrate dev      # or: npx prisma db push
+
+# 4. Seed realistic demo data (fictional student + 2 jobs + 1 generated packet)
 npm run db:seed
-npm run dev
+
+# 5. Run it
+npm run dev                 # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
-
-`npm run db:push` is kept as the standard Prisma command. On this Windows/Node setup it returned a blank schema-engine error, so `npm run db:init` uses Prisma's generated SQL plus `prisma db execute` to initialize the same SQLite schema.
-
-## Environment Variables
-
-- `DATABASE_URL`: SQLite locally, for example `file:./dev.db`.
-- `LLM_PROVIDER`: `mock`, `anthropic`, or `openai`; MVP defaults to `mock`.
-- `ENCRYPTION_KEY`: local encryption placeholder for future sensitive-field helpers.
-- `APP_BASE_URL`: local app URL.
-- `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`: optional future provider keys.
-- `EMAIL_FROM`, `RESEND_API_KEY`, `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`: optional future email draft/send integrations.
-
-## Database And Seed Data
-
-The Prisma schema is in `prisma/schema.prisma`. Seed data is blank by default. It clears local profiles, resumes, jobs, applications, and audit logs, then initializes app settings.
+Other scripts:
 
 ```bash
-npm run db:seed
+npm run build       # prisma generate + next build
+npm run start       # run the production build
+npm test            # run the Vitest suite (uses an isolated /tmp test DB + mock LLM)
+npm run typecheck   # tsc --noEmit
+npm run prisma:studio
 ```
 
-Optional demo data exists for development only:
+### Environment variables
 
-```bash
-SEED_DEMO=true npm run db:seed
-```
+Copy `.env.example` to `.env`. The app runs fully with the defaults (no secrets).
 
-The optional demo account is `student@example.edu` with password `demo-password-123`.
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `DATABASE_URL` | yes | DB connection. Default: `file:./dev.db` (SQLite). |
+| `LLM_PROVIDER` | yes | `mock` (default), `anthropic`, or `openai`. |
+| `ANTHROPIC_API_KEY` | optional | Needed only when `LLM_PROVIDER=anthropic`. |
+| `OPENAI_API_KEY` | optional | Needed only when `LLM_PROVIDER=openai`. |
+| `ENCRYPTION_KEY` | recommended | 32-byte key for field-level encryption of sensitive profile data. `openssl rand -base64 32`. |
+| `APP_BASE_URL` | optional | Base URL (default `http://localhost:3000`). |
+| `NEXTAUTH_SECRET` | optional | Reserved for auth (not in MVP). |
+| `EMAIL_FROM`, `RESEND_API_KEY` | optional | Email Mode sending. If unset, Email Mode exports a draft instead. |
+| `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET` | optional | Reserved for future Gmail draft integration. |
 
-The production app should not include demo profiles or demo jobs. `.vercelignore` excludes local `.env` files and SQLite database files from CLI deployments.
+**No API keys are hardcoded and no secrets are committed.** Keys are read from the
+environment only — never entered or stored in the database. If you select a paid
+provider without its key, InternPilot safely falls back to the mock provider.
 
-Local database files and generated storage are ignored by git.
+### Database setup
 
-On Vercel, the MVP can initialize an empty SQLite database in `/tmp` so the app boots cleanly, but that storage is ephemeral. Configure a persistent Postgres-compatible database before relying on hosted sign-in sessions or saved profile/application data across deployments and server restarts.
+Local development uses **SQLite**. The schema is written to be
+**Postgres-portable**: "enums" are `String` columns validated by Zod, and list
+values are stored as JSON strings. To target Postgres later, change the
+datasource `provider` to `postgresql`, point `DATABASE_URL` at your database, and
+run a migration.
 
-## MVP Workflow
+### Seed data
 
-1. Complete onboarding.
-2. Add Truth Vault facts.
-3. Paste or manually enter a job posting.
-4. Review parsed requirements, risk flags, and fit analysis.
-5. Generate an application packet.
-6. Review tailored resume, cover letter, answers, truth check, and keyword coverage.
-7. Approve the packet.
-8. Use Manual Mode copy/checklist tools to apply.
-9. Mark the application submitted.
-10. Track outcomes and export analytics.
+`npm run db:seed` creates a fictional CS student (Jordan Rivera), Truth Vault
+facts (education, a prior internship, two projects, a leadership role, skills,
+coursework), a parsed master resume, two internship postings (a Software
+Engineering and a Data Analyst role), and one application with a fully generated,
+truth-checked packet — so you can explore every screen immediately.
 
-## Compliance Design
+---
 
-InternPilot defaults to Manual Mode. Official adapter scaffolds exist for Greenhouse, Lever, Ashby, SmartRecruiters, and email, but they fall back unless credentials and permitted integrations are configured. All submission paths check approval state first and write audit records.
+## Using the MVP (end-to-end flow)
 
-Restricted platform URLs are stored for tracking and tailoring only. The app does not scrape or automate activity on those sites.
+1. **Onboard** — fill in your profile (`/onboarding`). Sensitive fields are
+   optional, but anything you enter must be accurate.
+2. **Build your Truth Vault** — add facts (`/profile?tab=vault`).
+3. **Add a job** — paste a description at `/jobs/new` (or import a public ATS URL).
+4. The app **parses** the posting, screens **risk indicators**, and **dedupes** it.
+5. Open the job to see the **fit score**, matched/missing skills, and keywords.
+6. Click **Analyze & tailor** to generate the packet in the **Tailoring Studio**.
+7. Review the **truth check** and **keyword coverage**; edit any answer; fix
+   unsupported claims.
+8. **Approve packet** → land on the **Submission Screen**.
+9. Confirm accuracy, then use **Manual Mode** copy buttons to apply on the
+   employer's site, and **mark it submitted**.
+10. Track everything in the **Tracker**; watch your **Analytics** update.
+
+---
+
+## Compliance & safety design
+
+- **Human-in-the-loop, enforced in code.** `submitApplication` is the single
+  submission entry point; it refuses to proceed unless the application is
+  *approved* **and** the user passes the *accuracy confirmation*.
+  "Require review before submission" is locked on.
+- **Truthful by construction.** The mock provider only ever emits content derived
+  from stored facts, and real providers are held to the same rules via the system
+  prompt. Every artifact cites supporting fact IDs; unsupported claims are flagged
+  by the truth check, never silently included.
+- **Restricted platforms** are detected by host and forced into Manual Mode — no
+  fetching, scraping, or automation. URL import only attempts **official/public
+  ATS APIs** (Greenhouse, Lever) and otherwise asks you to paste the description.
+- **Risk indicators only.** The app surfaces scam/quality signals (asks for
+  payment, crypto/payment-forwarding, messaging-app-only interviews, early
+  requests for sensitive PII, unrealistic pay, …) but never asserts safety.
+- **Sensitive questions.** Demographic / self-identification questions are never
+  auto-answered. Eligibility answers come only from explicitly stored facts and
+  always require per-application confirmation.
+- **Security.** All inputs are validated with Zod; rendered job descriptions are
+  escaped by React (no `dangerouslySetInnerHTML`); resume previews are sandboxed
+  iframes. Sensitive profile fields are encrypted at rest. Audit logs record
+  generation, approval, and submission with sanitized metadata — never full
+  resumes, answers, or secrets. Settings include data export and delete-all.
+
+### Submission modes
+
+1. **Manual Mode** (always available) — opens the posting, shows tailored
+   materials with copy buttons, you apply and mark it submitted. Works everywhere.
+2. **Official Adapter Mode** — Greenhouse / Lever / Ashby / SmartRecruiters
+   adapter scaffolds. Real submission requires a configured API key and always
+   requires approval; otherwise it **falls back to Manual Mode**.
+3. **Email Mode** — for postings that list an application email. Drafts an email
+   with attachments; sends only if an email provider is configured and you
+   confirm, otherwise exports a draft.
+
+---
 
 ## Testing
 
 ```bash
-npm run typecheck
-npm run lint
 npm test
-npm run build
 ```
 
-Tests cover job parsing schema behavior, fit scoring, unsupported claim detection, approval gates, restricted platform fallback, deduplication, adapter fallback, and sensitive question handling.
+Covers: job-parsing schema validation, deterministic risk-flag detection, fit
+scoring, unsupported-claim detection, sensitive-question handling, deduplication
+(exact + fuzzy), restricted-platform → Manual Mode routing, adapter submission
+fallback, and the **submission approval gate** (an application cannot be submitted
+unless approved *and* confirmed). The suite uses an isolated `/tmp` SQLite
+database and the mock LLM provider — no API keys required.
+
+---
+
+## Notable limitations (MVP)
+
+- **PDF export** is via the browser print dialog on a clean ATS-friendly HTML
+  render. **DOCX export** is abstracted but not yet implemented (see roadmap).
+- ATS adapters **import** from public APIs where feasible (Greenhouse, Lever);
+  Ashby/SmartRecruiters import and all authenticated **submission** paths are
+  scaffolded with clear `TODO`s and require explicit credentials.
+- Single-user, no authentication (NextAuth env vars are reserved for later).
+- Email sending requires a provider; otherwise a draft is exported.
+
+---
 
 ## Roadmap
 
-Phase 1:
-- Manual application workflow
-- Resume tailoring
-- Truth checking
-- Tracker
-- Role-family and industry targeting
-- AI wrapper settings with mock mode
+**Phase 1 (this MVP)** — Manual application workflow · resume tailoring · truth
+checking · tracker.
 
-Phase 2:
-- Better PDF/DOCX export
-- Gmail draft integration
-- Calendar reminders
-- CSV import/export
-- Contact/referral CRM
-- Persistent production database integration such as Postgres
+**Phase 2** — Better PDF/DOCX export · Gmail draft integration · calendar
+reminders · richer CSV import/export · contact/referral CRM.
 
-Phase 3:
-- Official ATS adapters
-- Browser extension for user-initiated autofill only on permitted sites
-- Advanced analytics
-- Multi-resume experiment tracking
+**Phase 3** — Official ATS adapters (authenticated submission) · a browser
+extension for *user-initiated* autofill on permitted sites only · advanced
+analytics · multi-resume experiment tracking.
 
-Phase 4:
-- Team/career-center mode
-- Referral outreach workflows
-- Interview prep assistant
-- Offer comparison
+**Phase 4** — Team / career-center mode · referral outreach workflows · interview
+prep assistant · offer comparison.
+
+---
+
+## Project structure
+
+```
+src/
+  app/                 # App Router pages + API route handlers
+  components/          # UI kit, forms, shared display components
+  lib/
+    actions/           # Server actions (thin, validated entry points)
+    services/          # Business logic (job, fit, tailor, application, analytics…)
+    adapters/          # Manual / Email / Greenhouse / Lever / Ashby / SmartRecruiters
+    llm/               # Provider abstraction (mock | anthropic | openai), prompts, schemas
+    text/              # Pure deterministic heuristics (risk flags, keyword extraction)
+    validation/        # Zod schemas
+prisma/                # schema.prisma + seed.ts
+tests/                 # Vitest suite
+```
+
+See `IMPLEMENTATION_PLAN.md` for the build plan and architecture notes.

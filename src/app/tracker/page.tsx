@@ -1,109 +1,147 @@
 import Link from "next/link";
-import { StatusSelect } from "@/components/status-select";
-import { Badge, ButtonLink, EmptyState, PageHeader, Panel, Score } from "@/components/ui";
-import { requireUser } from "@/lib/auth";
-import { listApplications } from "@/lib/services/application";
+import { KanbanSquare, Table2, Download } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
+import { EmptyState } from "@/components/empty-state";
+import { StatusBadge, FitScoreBadge } from "@/components/status-badge";
+import { StatusSelect } from "@/components/forms/status-select";
+import { listApplications } from "@/lib/services/application-service";
+import { APPLICATION_STATUSES, STATUS_LABELS, type ApplicationStatus } from "@/lib/constants";
+import { formatDate, formatRelativeDeadline, cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export default async function TrackerPage() {
-  const user = await requireUser("/tracker");
-  const applications = await listApplications(user.id);
-  const offers = applications.filter((application) => application.status === "offer");
+// Columns shown on the Kanban (a curated, ordered subset for readability).
+const KANBAN_COLUMNS: ApplicationStatus[] = [
+  "saved",
+  "needs-info",
+  "ready-for-review",
+  "approved",
+  "submitted",
+  "interview-scheduled",
+  "offer",
+  "rejected",
+];
+
+export default async function TrackerPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
+  const { view } = await searchParams;
+  const apps = await listApplications();
+  const isTable = view === "table";
+
+  const byStatus = new Map<string, typeof apps>();
+  for (const a of apps) {
+    const list = byStatus.get(a.status) ?? [];
+    list.push(a);
+    byStatus.set(a.status, list);
+  }
+
   return (
-    <>
-      <PageHeader title="Tracker" eyebrow="Applications and outcomes" action={<ButtonLink href="/api/export/applications.csv" tone="secondary">CSV export</ButtonLink>} />
-      {offers.length ? <OfferOverview offers={offers} /> : null}
-      {applications.length ? (
-        <Panel>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[860px] text-left text-sm">
-              <thead className="border-b border-[var(--line)] text-xs uppercase tracking-[0.08em] text-[var(--muted)]">
+    <div>
+      <PageHeader
+        title="Tracker"
+        description="Every application, deadline, and outcome in one place. Update statuses, add follow-ups, and export to CSV."
+      >
+        <Link href="/tracker" className={cn(buttonVariants({ variant: isTable ? "outline" : "default", size: "sm" }))}>
+          <KanbanSquare className="size-4" /> Kanban
+        </Link>
+        <Link href="/tracker?view=table" className={cn(buttonVariants({ variant: isTable ? "default" : "outline", size: "sm" }))}>
+          <Table2 className="size-4" /> Table
+        </Link>
+        <a href="/api/applications/export" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+          <Download className="size-4" /> Export CSV
+        </a>
+      </PageHeader>
+
+      {apps.length === 0 ? (
+        <EmptyState
+          icon={KanbanSquare}
+          title="No applications yet"
+          description="Once you tailor and track jobs, they'll appear here across the pipeline."
+          actionLabel="Add a job"
+          actionHref="/jobs/new"
+        />
+      ) : isTable ? (
+        <Card>
+          <CardContent className="overflow-x-auto p-0">
+            <table className="w-full text-sm">
+              <thead className="border-b bg-muted/40 text-left text-xs uppercase text-muted-foreground">
                 <tr>
-                  <th className="py-3">Company</th>
-                  <th>Role</th>
-                  <th>Fit</th>
-                  <th>Status</th>
-                  <th>Mode</th>
-                  <th>Updated</th>
-                  <th></th>
+                  <th className="px-4 py-2.5 font-medium">Company / Role</th>
+                  <th className="px-4 py-2.5 font-medium">Status</th>
+                  <th className="px-4 py-2.5 font-medium">Fit</th>
+                  <th className="px-4 py-2.5 font-medium">Deadline</th>
+                  <th className="px-4 py-2.5 font-medium">Applied</th>
+                  <th className="px-4 py-2.5 font-medium">Resume</th>
+                  <th className="px-4 py-2.5 font-medium">Source</th>
                 </tr>
               </thead>
               <tbody>
-                {applications.map((application) => (
-                  <tr key={application.id} className="border-b border-[var(--line)] last:border-0">
-                    <td className="py-3 font-medium">{application.jobPosting.company.name}</td>
-                    <td>{application.jobPosting.title}</td>
-                    <td>
-                      <Score value={application.fitScore} />
-                    </td>
-                    <td>
-                      <StatusSelect applicationId={application.id} value={application.status} />
-                    </td>
-                    <td>
-                      <Badge tone="info">{application.applicationMode}</Badge>
-                    </td>
-                    <td>{application.updatedAt.toLocaleDateString()}</td>
-                    <td>
-                      <Link className="font-medium text-emerald-700" href={`/applications/${application.id}/tailor`}>
-                        Open
+                {apps.map((a) => (
+                  <tr key={a.id} className="border-b last:border-0 hover:bg-accent/40">
+                    <td className="px-4 py-2.5">
+                      <Link href={`/applications/${a.id}/tailor`} className="font-medium hover:underline">
+                        {a.jobPosting.company.name}
                       </Link>
+                      <div className="text-xs text-muted-foreground">{a.jobPosting.title}</div>
                     </td>
+                    <td className="px-4 py-2.5">
+                      <StatusSelect applicationId={a.id} status={a.status} />
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <FitScoreBadge score={a.fitScore} />
+                    </td>
+                    <td className="px-4 py-2.5 text-xs text-muted-foreground">
+                      {formatRelativeDeadline(a.jobPosting.deadline)}
+                    </td>
+                    <td className="px-4 py-2.5 text-xs text-muted-foreground">{formatDate(a.submittedAt)}</td>
+                    <td className="px-4 py-2.5 text-xs text-muted-foreground">{a.resumeVersionLabel ?? "—"}</td>
+                    <td className="px-4 py-2.5 text-xs text-muted-foreground">{a.source ?? a.jobPosting.sourceName ?? "—"}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
-        </Panel>
+          </CardContent>
+        </Card>
       ) : (
-        <EmptyState title="No applications yet" body="Generate a packet from a job detail page to start tracking." action={<ButtonLink href="/jobs">Open Job Inbox</ButtonLink>} />
-      )}
-    </>
-  );
-}
-
-function OfferOverview({ offers }: { offers: Awaited<ReturnType<typeof listApplications>> }) {
-  return (
-    <Panel className="mb-6">
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div>
-          <h2 className="text-lg font-semibold">Offer overview</h2>
-          <p className="mt-1 text-sm text-stone-700">Use this as the command center before accepting anything.</p>
+        <div className="grid grid-flow-col auto-cols-[minmax(240px,1fr)] gap-3 overflow-x-auto pb-3">
+          {KANBAN_COLUMNS.map((status) => {
+            const items = byStatus.get(status) ?? [];
+            return (
+              <div key={status} className="flex min-w-[240px] flex-col rounded-lg border bg-muted/30">
+                <div className="flex items-center justify-between px-3 py-2.5">
+                  <span className="text-sm font-semibold">{STATUS_LABELS[status]}</span>
+                  <Badge variant="muted">{items.length}</Badge>
+                </div>
+                <div className="flex-1 space-y-2 px-2 pb-2">
+                  {items.map((a) => (
+                    <Link
+                      key={a.id}
+                      href={`/applications/${a.id}/tailor`}
+                      className="block rounded-md border bg-card p-3 shadow-sm transition-colors hover:border-primary/40"
+                    >
+                      <div className="text-sm font-medium">{a.jobPosting.company.name}</div>
+                      <div className="text-xs text-muted-foreground">{a.jobPosting.title}</div>
+                      <div className="mt-2 flex items-center justify-between">
+                        <FitScoreBadge score={a.fitScore} />
+                        {a.jobPosting.deadline ? (
+                          <span className="text-xs text-muted-foreground">
+                            {formatRelativeDeadline(a.jobPosting.deadline)}
+                          </span>
+                        ) : null}
+                      </div>
+                    </Link>
+                  ))}
+                  {items.length === 0 ? (
+                    <p className="px-1 py-2 text-xs text-muted-foreground">—</p>
+                  ) : null}
+                </div>
+              </div>
+            );
+          })}
         </div>
-        <Badge tone="good">{offers.length} active offer{offers.length === 1 ? "" : "s"}</Badge>
-      </div>
-      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <OfferBox title="Offer details" items={["Role title and team", "Start date and duration", "Pay, stipend, housing, relocation", "Deadline to accept"]} />
-        <OfferBox title="People to contact" items={["Recruiter email", "Hiring manager", "University career adviser", "International office if relevant"]} />
-        <OfferBox title="Decision checks" items={["Learning value", "Manager support", "Return-offer path", "Location and schedule fit"]} />
-        <OfferBox title="Before accepting" items={["Save offer letter", "Ask unresolved questions", "Update tracker notes", "Mark other applications respectfully"]} />
-      </div>
-      <div className="mt-4 grid gap-3">
-        {offers.map((offer) => (
-          <div key={offer.id} className="flex flex-col gap-2 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="font-semibold text-emerald-950">{offer.jobPosting.company.name} - {offer.jobPosting.title}</p>
-              <p className="text-emerald-900">Fit score {offer.fitScore}. Review tailored materials, questions, and submission notes before making a decision.</p>
-            </div>
-            <Link className="font-medium text-emerald-800" href={`/applications/${offer.id}/tailor`}>
-              Open offer file
-            </Link>
-          </div>
-        ))}
-      </div>
-    </Panel>
-  );
-}
-
-function OfferBox({ title, items }: { title: string; items: string[] }) {
-  return (
-    <div className="rounded-md bg-[#fbfbf8] p-3">
-      <p className="text-sm font-semibold">{title}</p>
-      <ul className="mt-2 grid gap-1 text-sm text-stone-700">
-        {items.map((item) => (
-          <li key={item}>{item}</li>
-        ))}
-      </ul>
+      )}
     </div>
   );
 }

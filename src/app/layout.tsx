@@ -1,35 +1,26 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import { AppShell } from "@/components/app-shell";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import { Sidebar, MobileNav } from "@/components/layout/sidebar";
 
 export const metadata: Metadata = {
-  title: "InternPilot",
-  description: "Human-reviewed internship application command center",
+  title: "InternPilot — Internship Application Command Center",
+  description:
+    "A human-in-the-loop assistant to manage, tailor, and submit internship applications truthfully.",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full">
-        <AppShell>{children}</AppShell>
+    <html lang="en">
+      <body className="min-h-screen antialiased">
+        <div className="flex min-h-screen">
+          <Sidebar />
+          <div className="flex min-w-0 flex-1 flex-col">
+            <MobileNav />
+            <main className="flex-1 px-5 py-6 md:px-8 md:py-8">
+              <div className="mx-auto w-full max-w-6xl">{children}</div>
+            </main>
+          </div>
+        </div>
       </body>
     </html>
   );
