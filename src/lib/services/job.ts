@@ -13,6 +13,7 @@ export async function createJobFromInput(input: {
   roleCategory?: string | null;
   location?: string | null;
   rawDescription: string;
+  userAccountId: string;
 }) {
   await ensureDatabaseReady();
   const parsed = parseJobPostingMock(input);
@@ -24,7 +25,7 @@ export async function createJobFromInput(input: {
     rawDescription: input.rawDescription,
   });
   const existing = await prisma.jobPosting.findFirst({
-    where: { dedupeHash: hash },
+    where: { dedupeHash: hash, userAccountId: input.userAccountId },
     include: { company: true, questions: true },
   });
   if (existing) return existing;
@@ -40,6 +41,7 @@ export async function createJobFromInput(input: {
   const job = await prisma.jobPosting.create({
     data: {
       companyId: company.id,
+      userAccountId: input.userAccountId,
       title: parsed.title,
       location: parsed.location ?? null,
       workplaceType: parsed.workplaceType ?? null,
@@ -80,9 +82,10 @@ export async function createJobFromInput(input: {
   return job;
 }
 
-export async function listJobs() {
+export async function listJobs(userAccountId: string) {
   await ensureDatabaseReady();
   return prisma.jobPosting.findMany({
+    where: { userAccountId },
     include: {
       company: true,
       applications: true,
@@ -92,10 +95,10 @@ export async function listJobs() {
   });
 }
 
-export async function getJob(id: string) {
+export async function getJob(id: string, userAccountId: string) {
   await ensureDatabaseReady();
-  return prisma.jobPosting.findUnique({
-    where: { id },
+  return prisma.jobPosting.findFirst({
+    where: { id, userAccountId },
     include: {
       company: true,
       questions: true,

@@ -3,13 +3,15 @@ import { createFactAction } from "@/app/actions";
 import { ProfileForm } from "@/components/profile-form";
 import { SubmitButton } from "@/components/submit-button";
 import { Badge, EmptyState, PageHeader, Panel, inputClass, labelClass } from "@/components/ui";
+import { requireUser } from "@/lib/auth";
 import { toList } from "@/lib/json";
 import { getPrimaryProfile } from "@/lib/services/profile";
 
 export const dynamic = "force-dynamic";
 
 export default async function ProfilePage() {
-  const profile = await getPrimaryProfile();
+  const user = await requireUser("/profile");
+  const profile = await getPrimaryProfile(user.id);
 
   return (
     <>

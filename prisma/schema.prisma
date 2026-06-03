@@ -7,8 +7,33 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model UserAccount {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  displayName  String?
+  passwordHash String
+  passwordSalt String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  jobs     JobPosting[]
+  profiles UserProfile[]
+  sessions UserSession[]
+}
+
+model UserSession {
+  id            String      @id @default(cuid())
+  userAccountId String
+  tokenHash     String      @unique
+  expiresAt     DateTime
+  createdAt     DateTime    @default(now())
+
+  userAccount UserAccount @relation(fields: [userAccountId], references: [id], onDelete: Cascade)
+}
+
 model UserProfile {
   id                  String    @id @default(cuid())
+  userAccountId       String?   @unique
   legalName           String
   preferredName       String?
   email               String
@@ -37,6 +62,7 @@ model UserProfile {
   facts        ProfileFact[]
   files        FileAsset[]
   resumes      Resume[]
+  userAccount  UserAccount? @relation(fields: [userAccountId], references: [id], onDelete: Cascade)
 }
 
 model ProfileFact {
@@ -114,6 +140,7 @@ model Company {
 
 model JobPosting {
   id                      String          @id @default(cuid())
+  userAccountId           String?
   companyId               String
   title                   String
   location                String?
@@ -141,6 +168,7 @@ model JobPosting {
   company        Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
   questions      JobQuestion[]
   resumeVersions ResumeVersion[]
+  userAccount    UserAccount?    @relation(fields: [userAccountId], references: [id], onDelete: Cascade)
 }
 
 model JobQuestion {

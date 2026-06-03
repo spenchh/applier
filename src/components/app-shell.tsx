@@ -1,5 +1,7 @@
-import { BarChart3, BriefcaseBusiness, ClipboardCheck, FileText, Home, Inbox, Settings, ShieldCheck, UserRound } from "lucide-react";
+import { BarChart3, BriefcaseBusiness, ClipboardCheck, FileText, Home, Inbox, LogIn, LogOut, Settings, ShieldCheck, UserRound } from "lucide-react";
 import Link from "next/link";
+import { signOutAction } from "@/app/actions";
+import { currentUser } from "@/lib/auth";
 
 const nav = [
   { href: "/", label: "Dashboard", icon: Home },
@@ -13,7 +15,8 @@ const nav = [
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export async function AppShell({ children }: { children: React.ReactNode }) {
+  const user = await currentUser();
   return (
     <div className="app-shell min-h-screen bg-[var(--background)]">
       <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-[var(--line)] bg-[#fbfbf8] px-4 py-5 lg:block">
@@ -32,12 +35,42 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
+        <div className="absolute inset-x-4 bottom-5 rounded-md border border-[var(--line)] bg-white p-3 text-sm">
+          {user ? (
+            <div className="grid gap-3">
+              <div>
+                <p className="font-medium">{user.displayName || user.email}</p>
+                <p className="truncate text-xs text-[var(--muted)]">{user.email}</p>
+              </div>
+              <form action={signOutAction}>
+                <button type="submit" className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm font-medium text-stone-700 hover:bg-[#ecece4]">
+                  <LogOut className="h-4 w-4" aria-hidden />
+                  Sign out
+                </button>
+              </form>
+            </div>
+          ) : (
+            <Link href="/sign-in" className="flex items-center gap-2 rounded-md px-2 py-1.5 font-medium text-stone-700 hover:bg-[#ecece4]">
+              <LogIn className="h-4 w-4" aria-hidden />
+              Sign in
+            </Link>
+          )}
+        </div>
       </aside>
       <div className="lg:pl-64">
         <header className="sticky top-0 z-10 border-b border-[var(--line)] bg-[#fbfbf8]/95 px-4 py-3 backdrop-blur lg:hidden">
-          <Link href="/" className="font-semibold">
-            InternPilot
-          </Link>
+          <div className="flex items-center justify-between gap-3">
+            <Link href="/" className="font-semibold">
+              InternPilot
+            </Link>
+            {user ? (
+              <form action={signOutAction}>
+                <button type="submit" className="text-sm font-medium text-stone-700">Sign out</button>
+              </form>
+            ) : (
+              <Link href="/sign-in" className="text-sm font-medium text-stone-700">Sign in</Link>
+            )}
+          </div>
         </header>
         <main className="mx-auto min-h-screen max-w-7xl px-4 py-6 sm:px-6 lg:px-8">{children}</main>
       </div>

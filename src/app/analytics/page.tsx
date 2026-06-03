@@ -1,10 +1,12 @@
 import { PageHeader, Panel } from "@/components/ui";
+import { requireUser } from "@/lib/auth";
 import { getAnalytics } from "@/lib/services/analytics";
 
 export const dynamic = "force-dynamic";
 
 export default async function AnalyticsPage() {
-  const analytics = await getAnalytics();
+  const user = await requireUser("/analytics");
+  const analytics = await getAnalytics(user.id);
   return (
     <>
       <PageHeader title="Analytics" eyebrow="Application outcomes" />

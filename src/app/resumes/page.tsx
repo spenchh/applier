@@ -1,12 +1,14 @@
 import { createResumeAction } from "@/app/actions";
 import { SubmitButton } from "@/components/submit-button";
 import { Badge, EmptyState, PageHeader, Panel, inputClass, labelClass } from "@/components/ui";
+import { requireUser } from "@/lib/auth";
 import { getPrimaryProfile } from "@/lib/services/profile";
 
 export const dynamic = "force-dynamic";
 
 export default async function ResumesPage() {
-  const profile = await getPrimaryProfile();
+  const user = await requireUser("/resumes");
+  const profile = await getPrimaryProfile(user.id);
   return (
     <>
       <PageHeader title="Resume Manager" eyebrow="ATS-friendly materials" />

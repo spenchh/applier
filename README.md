@@ -4,7 +4,7 @@ InternPilot is a local-first internship application command center. It helps a s
 
 ## What It Does
 
-- Stores profile basics, resumes, verified facts, skills, projects, education, work history, and eligibility facts.
+- Supports email/password sign-in with remembered sessions, then stores profile basics, resumes, verified facts, skills, projects, education, work history, and eligibility facts per account.
 - Imports postings from pasted descriptions, manual fields, URLs, and official ATS-style URLs where appropriate.
 - Parses jobs with a mock LLM provider that works without paid API keys.
 - Lets users set target role families and industries, including software, data, product, design/UX, marketing, finance, consulting, research, operations, policy/legal, communications, sales, HR, and general internships.
@@ -45,7 +45,6 @@ Open [http://localhost:3000](http://localhost:3000).
 - `ENCRYPTION_KEY`: local encryption placeholder for future sensitive-field helpers.
 - `APP_BASE_URL`: local app URL.
 - `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`: optional future provider keys.
-- `NEXTAUTH_SECRET`: optional if auth is added.
 - `EMAIL_FROM`, `RESEND_API_KEY`, `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`: optional future email draft/send integrations.
 
 ## Database And Seed Data
@@ -62,11 +61,13 @@ Optional demo data exists for development only:
 SEED_DEMO=true npm run db:seed
 ```
 
+The optional demo account is `student@example.edu` with password `demo-password-123`.
+
 The production app should not include demo profiles or demo jobs. `.vercelignore` excludes local `.env` files and SQLite database files from CLI deployments.
 
 Local database files and generated storage are ignored by git.
 
-On Vercel, the MVP can initialize an empty SQLite database in `/tmp` so the app boots cleanly, but that storage is ephemeral. Configure a persistent Postgres-compatible database before relying on hosted data across sessions or users.
+On Vercel, the MVP can initialize an empty SQLite database in `/tmp` so the app boots cleanly, but that storage is ephemeral. Configure a persistent Postgres-compatible database before relying on hosted sign-in sessions or saved profile/application data across deployments and server restarts.
 
 ## MVP Workflow
 

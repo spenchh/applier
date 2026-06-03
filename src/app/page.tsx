@@ -1,6 +1,7 @@
 import { AlertTriangle, ArrowRight, CalendarClock, ClipboardCheck, Inbox, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { Badge, ButtonLink, EmptyState, PageHeader, Panel, Score } from "@/components/ui";
+import { requireUser } from "@/lib/auth";
 import { getAnalytics } from "@/lib/services/analytics";
 import { listApplications } from "@/lib/services/application";
 import { listJobs } from "@/lib/services/job";
@@ -9,7 +10,8 @@ import { getPrimaryProfile } from "@/lib/services/profile";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const [profile, jobs, applications, analytics] = await Promise.all([getPrimaryProfile(), listJobs(), listApplications(), getAnalytics()]);
+  const user = await requireUser("/");
+  const [profile, jobs, applications, analytics] = await Promise.all([getPrimaryProfile(user.id), listJobs(user.id), listApplications(user.id), getAnalytics(user.id)]);
   const ready = applications.filter((application) => application.status === "ready for review" || application.status === "approved");
   const recentJobs = jobs.slice(0, 4);
 

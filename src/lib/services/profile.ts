@@ -3,9 +3,10 @@ import { writeJson } from "../json";
 import { ensureDatabaseReady } from "../runtime-db";
 import { parseDate } from "./shared";
 
-export async function getPrimaryProfile() {
+export async function getPrimaryProfile(userAccountId: string) {
   await ensureDatabaseReady();
   return prisma.userProfile.findFirst({
+    where: { userAccountId },
     include: {
       facts: {
         orderBy: { createdAt: "desc" },
@@ -17,15 +18,16 @@ export async function getPrimaryProfile() {
   });
 }
 
-export async function ensureProfile() {
+export async function ensureProfile(userAccountId: string, user?: { email: string; displayName: string | null }) {
   await ensureDatabaseReady();
-  const existing = await getPrimaryProfile();
+  const existing = await getPrimaryProfile(userAccountId);
   if (existing) return existing;
   return prisma.userProfile.create({
     data: {
-      legalName: "New Student",
-      preferredName: "Student",
-      email: "student@example.com",
+      userAccountId,
+      legalName: user?.displayName || "New Student",
+      preferredName: user?.displayName || "Student",
+      email: user?.email || "student@example.com",
       school: "Add your school",
       major: "Add your major",
     },
@@ -58,10 +60,11 @@ export async function upsertProfile(input: {
   githubUrl?: string;
   linkedinUrl?: string;
   websiteUrl?: string;
-}) {
+}, userAccountId: string) {
   await ensureDatabaseReady();
-  const existing = await prisma.userProfile.findFirst();
+  const existing = await prisma.userProfile.findFirst({ where: { userAccountId } });
   const data = {
+    userAccountId,
     legalName: input.legalName,
     preferredName: input.preferredName || null,
     email: input.email,

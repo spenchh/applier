@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createJobAction } from "@/app/actions";
 import { SubmitButton } from "@/components/submit-button";
 import { Badge, EmptyState, PageHeader, Panel, inputClass, labelClass } from "@/components/ui";
+import { requireUser } from "@/lib/auth";
 import { toList } from "@/lib/json";
 import { listJobs } from "@/lib/services/job";
 import { getSettings } from "@/lib/services/settings";
@@ -10,7 +11,8 @@ import { isRestrictedPlatform, roleCategories, roleCategoryLabel } from "@/lib/t
 export const dynamic = "force-dynamic";
 
 export default async function JobsPage() {
-  const [jobs, settings] = await Promise.all([listJobs(), getSettings()]);
+  const user = await requireUser("/jobs");
+  const [jobs, settings] = await Promise.all([listJobs(user.id), getSettings()]);
   const targetRoles = toList(settings.targetRoleTypes);
   const targetIndustries = toList(settings.targetIndustries);
   return (

@@ -12,11 +12,13 @@ export async function generateApplicationPacket(jobPostingId: string, userProfil
     where: { id: userProfileId },
     include: { facts: true },
   });
-  const job = await prisma.jobPosting.findUnique({
-    where: { id: jobPostingId },
+  if (!profile) throw new Error("Profile not found");
+
+  const job = await prisma.jobPosting.findFirst({
+    where: { id: jobPostingId, userAccountId: profile.userAccountId },
     include: { company: true, questions: true },
   });
-  if (!profile || !job) throw new Error("Profile or job not found");
+  if (!job) throw new Error("Job not found");
 
   const fit = calculateFit(job, profile.facts);
   const application = await prisma.application.upsert({

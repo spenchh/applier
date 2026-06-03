@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { prisma } from "../src/lib/db";
 import { ensureDatabaseReady } from "../src/lib/runtime-db";
 import { approveApplication, markSubmitted } from "../src/lib/services/application";
@@ -10,7 +11,8 @@ import { generateApplicationPacket } from "../src/lib/services/tailoring";
 async function clearData() {
   await ensureDatabaseReady();
   await prisma.auditLog.deleteMany();
-  await prisma.userProfile.deleteMany();
+  await prisma.userSession.deleteMany();
+  await prisma.userAccount.deleteMany();
   await prisma.company.deleteMany();
   await updateSettings({
     llmProvider: "mock",
@@ -22,6 +24,16 @@ async function clearData() {
 }
 
 async function seedDemoData() {
+  const { hash, salt } = await hashSeedPassword("demo-password-123");
+  const user = await prisma.userAccount.create({
+    data: {
+      email: "student@example.edu",
+      displayName: "Demo Student",
+      passwordHash: hash,
+      passwordSalt: salt,
+    },
+  });
+
   const profile = await upsertProfile({
     legalName: "Demo Student",
     preferredName: "Demo",
@@ -36,7 +48,7 @@ async function seedDemoData() {
     preferredTerms: ["summer"],
     preferredLocations: ["Chicago", "Remote"],
     remotePreference: "hybrid",
-  });
+  }, user.id);
 
   await createProfileFact({
     userProfileId: profile.id,
@@ -96,11 +108,12 @@ Support scheduling, volunteer coordination, process improvement, and event logis
 Required: communication, organization, and comfort working with stakeholders.
 Preferred: project management, writing, and interest in community programs.
 Question: Tell us about a time you coordinated a project.`,
+    userAccountId: user.id,
   });
 
   const application = await generateApplicationPacket(operationsJob.id, profile.id);
-  await approveApplication(application.id);
-  await markSubmitted(application.id);
+  await approveApplication(application.id, user.id);
+  await markSubmitted(application.id, user.id);
 }
 
 async function main() {
@@ -111,6 +124,19 @@ async function main() {
     return;
   }
   console.log("Cleared local data and initialized blank InternPilot settings.");
+}
+
+function hashSeedPassword(password: string) {
+  const salt = crypto.randomBytes(16).toString("base64url");
+  return new Promise<{ hash: string; salt: string }>((resolve, reject) => {
+    crypto.scrypt(password, salt, 64, (error, derivedKey) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve({ hash: derivedKey.toString("hex"), salt });
+    });
+  });
 }
 
 main()

@@ -1,12 +1,14 @@
 import { ProfileForm } from "@/components/profile-form";
 import { PageHeader, Panel } from "@/components/ui";
+import { requireUser } from "@/lib/auth";
 import { getPrimaryProfile } from "@/lib/services/profile";
 import { toList } from "@/lib/json";
 
 export const dynamic = "force-dynamic";
 
 export default async function OnboardingPage() {
-  const profile = await getPrimaryProfile();
+  const user = await requireUser("/onboarding");
+  const profile = await getPrimaryProfile(user.id);
   return (
     <>
       <PageHeader title="Onboarding" eyebrow="Profile basics" />

@@ -3,6 +3,7 @@ import { DeleteDataForm } from "@/components/delete-data-form";
 import { SubmitButton } from "@/components/submit-button";
 import { ButtonLink, PageHeader, Panel, inputClass, labelClass } from "@/components/ui";
 import { getAIWrapperStatus, safeProviderName } from "@/lib/ai-wrapper";
+import { requireUser } from "@/lib/auth";
 import { toList } from "@/lib/json";
 import { getSettings } from "@/lib/services/settings";
 import { roleCategories, roleCategoryLabel } from "@/lib/text";
@@ -10,6 +11,7 @@ import { roleCategories, roleCategoryLabel } from "@/lib/text";
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
+  await requireUser("/settings");
   const settings = await getSettings();
   const aiStatus = getAIWrapperStatus({
     provider: safeProviderName(settings.llmProvider),

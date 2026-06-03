@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { generatePacketAction } from "@/app/actions";
 import { SubmitButton } from "@/components/submit-button";
 import { Badge, ButtonLink, PageHeader, Panel, Score } from "@/components/ui";
+import { requireUser } from "@/lib/auth";
 import { readJson, toList } from "@/lib/json";
 import type { ParsedJob } from "@/lib/schemas";
 import { calculateFit } from "@/lib/services/fit";
@@ -13,7 +14,8 @@ export const dynamic = "force-dynamic";
 
 export default async function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [job, profile] = await Promise.all([getJob(id), getPrimaryProfile()]);
+  const user = await requireUser(`/jobs/${id}`);
+  const [job, profile] = await Promise.all([getJob(id, user.id), getPrimaryProfile(user.id)]);
   if (!job) notFound();
   const parsed = readJson<Partial<ParsedJob>>(job.parsedJson, {});
   const fit = profile ? calculateFit(job, profile.facts) : null;

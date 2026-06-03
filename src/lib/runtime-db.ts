@@ -25,4 +25,13 @@ async function initializeSqliteSchema() {
   for (const statement of statements) {
     await prisma.$executeRawUnsafe(statement);
   }
+
+  await ensureSqliteColumn("UserProfile", "userAccountId", "TEXT");
+  await ensureSqliteColumn("JobPosting", "userAccountId", "TEXT");
+}
+
+async function ensureSqliteColumn(tableName: string, columnName: string, columnType: string) {
+  const columns = await prisma.$queryRawUnsafe<Array<{ name: string }>>(`PRAGMA table_info("${tableName}")`);
+  if (columns.some((column) => column.name === columnName)) return;
+  await prisma.$executeRawUnsafe(`ALTER TABLE "${tableName}" ADD COLUMN "${columnName}" ${columnType}`);
 }

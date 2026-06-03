@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
+import { requireUser } from "@/lib/auth";
 import { listApplications } from "@/lib/services/application";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const applications = await listApplications();
+  const user = await requireUser("/tracker");
+  const applications = await listApplications(user.id);
   const rows = [
     ["company", "role", "status", "mode", "fit_score", "submitted_at", "source"],
     ...applications.map((application) => [

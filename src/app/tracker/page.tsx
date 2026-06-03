@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { StatusSelect } from "@/components/status-select";
 import { Badge, ButtonLink, EmptyState, PageHeader, Panel, Score } from "@/components/ui";
+import { requireUser } from "@/lib/auth";
 import { listApplications } from "@/lib/services/application";
 
 export const dynamic = "force-dynamic";
 
 export default async function TrackerPage() {
-  const applications = await listApplications();
+  const user = await requireUser("/tracker");
+  const applications = await listApplications(user.id);
   return (
     <>
       <PageHeader title="Tracker" eyebrow="Applications and outcomes" action={<ButtonLink href="/api/export/applications.csv" tone="secondary">CSV export</ButtonLink>} />

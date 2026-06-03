@@ -3,6 +3,7 @@ import { approveApplicationAction } from "@/app/actions";
 import { CopyButton } from "@/components/copy-button";
 import { SubmitButton } from "@/components/submit-button";
 import { Badge, ButtonLink, PageHeader, Panel, Score } from "@/components/ui";
+import { requireUser } from "@/lib/auth";
 import { readJson } from "@/lib/json";
 import type { KeywordCoverage, TruthCheck } from "@/lib/schemas";
 import { getApplication } from "@/lib/services/application";
@@ -11,7 +12,8 @@ export const dynamic = "force-dynamic";
 
 export default async function TailoringPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const application = await getApplication(id);
+  const user = await requireUser(`/applications/${id}/tailor`);
+  const application = await getApplication(id, user.id);
   if (!application) notFound();
   const resume = application.resumeVersions[0];
   const cover = application.coverLetters[0];

@@ -1,5 +1,29 @@
+CREATE TABLE IF NOT EXISTS "UserAccount" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "email" TEXT NOT NULL,
+    "displayName" TEXT,
+    "passwordHash" TEXT NOT NULL,
+    "passwordSalt" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "UserAccount_email_key" ON "UserAccount"("email");
+
+CREATE TABLE IF NOT EXISTS "UserSession" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "userAccountId" TEXT NOT NULL,
+    "tokenHash" TEXT NOT NULL,
+    "expiresAt" DATETIME NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "UserSession_userAccountId_fkey" FOREIGN KEY ("userAccountId") REFERENCES "UserAccount" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "UserSession_tokenHash_key" ON "UserSession"("tokenHash");
+
 CREATE TABLE IF NOT EXISTS "UserProfile" (
     "id" TEXT NOT NULL PRIMARY KEY,
+    "userAccountId" TEXT,
     "legalName" TEXT NOT NULL,
     "preferredName" TEXT,
     "email" TEXT NOT NULL,
@@ -22,8 +46,11 @@ CREATE TABLE IF NOT EXISTS "UserProfile" (
     "linkedinUrl" TEXT,
     "websiteUrl" TEXT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "UserProfile_userAccountId_fkey" FOREIGN KEY ("userAccountId") REFERENCES "UserAccount" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS "UserProfile_userAccountId_key" ON "UserProfile"("userAccountId");
 
 CREATE TABLE IF NOT EXISTS "ProfileFact" (
     "id" TEXT NOT NULL PRIMARY KEY,
@@ -94,6 +121,7 @@ CREATE TABLE IF NOT EXISTS "Company" (
 
 CREATE TABLE IF NOT EXISTS "JobPosting" (
     "id" TEXT NOT NULL PRIMARY KEY,
+    "userAccountId" TEXT,
     "companyId" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "location" TEXT,
@@ -116,7 +144,8 @@ CREATE TABLE IF NOT EXISTS "JobPosting" (
     "importedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
-    CONSTRAINT "JobPosting_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES "Company" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    CONSTRAINT "JobPosting_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES "Company" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "JobPosting_userAccountId_fkey" FOREIGN KEY ("userAccountId") REFERENCES "UserAccount" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS "JobQuestion" (

@@ -3,13 +3,15 @@ import { markSubmittedAction } from "@/app/actions";
 import { CopyButton } from "@/components/copy-button";
 import { SubmitButton } from "@/components/submit-button";
 import { Badge, ButtonLink, PageHeader, Panel } from "@/components/ui";
+import { requireUser } from "@/lib/auth";
 import { getApplication } from "@/lib/services/application";
 
 export const dynamic = "force-dynamic";
 
 export default async function SubmissionPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const application = await getApplication(id);
+  const user = await requireUser(`/applications/${id}/submit`);
+  const application = await getApplication(id, user.id);
   if (!application) notFound();
   const resume = application.resumeVersions[0];
   const cover = application.coverLetters[0];

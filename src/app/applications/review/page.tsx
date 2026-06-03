@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { Badge, ButtonLink, EmptyState, PageHeader, Panel, Score } from "@/components/ui";
+import { requireUser } from "@/lib/auth";
 import { listApplications } from "@/lib/services/application";
 
 export const dynamic = "force-dynamic";
 
 export default async function ReviewQueuePage() {
-  const applications = await listApplications();
+  const user = await requireUser("/applications/review");
+  const applications = await listApplications(user.id);
   const queue = applications.filter((application) => ["drafted", "ready for review", "approved", "needs info"].includes(application.status));
 
   return (
