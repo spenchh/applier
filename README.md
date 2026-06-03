@@ -23,7 +23,7 @@ npm run db:generate
 npm run dev
 ```
 
-If `DATABASE_URL` is not provided on Vercel, the app falls back to SQLite in `/tmp/momentum.db`. Use a managed database before relying on this for long-term production data.
+If `DATABASE_URL` is not provided on Vercel, the app falls back to the existing SQLite filename in `/tmp`. Use a managed database before relying on this for long-term production data.
 
 ## Verification
 
