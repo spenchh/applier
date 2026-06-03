@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { Document, Packer, Paragraph } from "docx";
+import mammoth from "mammoth";
 import { z } from "zod";
 import { extractJson, generateAIObject, getAIProvider, getAIWrapperStatus } from "./ai-wrapper";
 import { adapterFor, chooseApplicationMode } from "./adapters";
@@ -7,6 +9,8 @@ import { generateAnswerMock, parseJobPostingMock, truthCheckMaterial, type FactL
 import { canSubmitApplication } from "./services/application";
 import { matchesDiscoveryQuery, normalizeDiscoveryQuery, sourcedJobToJobInput } from "./services/discovery";
 import { calculateFit } from "./services/fit";
+import { buildResumeDocxBuffer, extractResumeTextFromFile, parseResumeStructure } from "./services/resume";
+import { resumeUploadSchema } from "./schemas";
 import { dedupeHash, extractTechnologies, isSensitiveQuestion } from "./text";
 
 const fact: FactLike = {
@@ -182,5 +186,73 @@ describe("InternPilot core behavior", () => {
     const first = dedupeHash(input);
     const second = dedupeHash({ ...input, sourceUrl: input.sourceUrl?.replace("https://", "http://") });
     expect(first).toBe(second);
+  });
+
+  it("parses resume text into structured sections", () => {
+    const structure = parseResumeStructure(`Demo Student
+student@example.edu | Chicago, IL
+
+EDUCATION
+Example University
+
+PROJECTS
+- Built a React dashboard with SQL.
+
+SKILLS
+React, SQL, Git`);
+    expect(structure.nameLine).toBe("Demo Student");
+    expect(structure.sections.map((section) => section.heading)).toContain("Projects");
+    expect(structure.skills).toEqual(expect.arrayContaining(["React", "SQL"]));
+  });
+
+  it("rejects invalid resume uploads", () => {
+    expect(() =>
+      resumeUploadSchema.parse({
+        name: "Resume",
+        baseType: "general_internship",
+        filename: "resume.txt",
+        mimeType: "text/plain",
+        size: 100,
+      }),
+    ).toThrow();
+    expect(() =>
+      resumeUploadSchema.parse({
+        name: "Resume",
+        baseType: "general_internship",
+        filename: "resume.pdf",
+        mimeType: "application/pdf",
+        size: 6 * 1024 * 1024,
+      }),
+    ).toThrow();
+  });
+
+  it("extracts text from a DOCX upload buffer", async () => {
+    const document = new Document({
+      sections: [{ children: [new Paragraph("Demo Student"), new Paragraph("PROJECTS"), new Paragraph("Built a React dashboard.")] }],
+    });
+    const buffer = await Packer.toBuffer(document);
+    const text = await extractResumeTextFromFile({
+      bytes: new Uint8Array(buffer),
+      mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    });
+    expect(text).toContain("Demo Student");
+    expect(text).toContain("Built a React dashboard");
+  });
+
+  it("exports a tailored resume as a readable DOCX buffer", async () => {
+    const buffer = await buildResumeDocxBuffer({
+      text: `Demo Student
+student@example.edu
+
+SUMMARY
+Computer engineering student.
+
+PROJECTS
+- Built a React dashboard.`,
+    });
+    expect(buffer.byteLength).toBeGreaterThan(1000);
+    const raw = await mammoth.extractRawText({ buffer });
+    expect(raw.value).toContain("Demo Student");
+    expect(raw.value).toContain("Projects");
   });
 });

@@ -49,6 +49,29 @@ export const resumeSchema = z.object({
   isMaster: z.boolean().default(false),
 });
 
+export const resumeUploadSchema = z.object({
+  name: z.string().min(1),
+  baseType: z.string().min(1),
+  isMaster: z.boolean().default(true),
+  filename: z.string().min(1),
+  mimeType: z.enum(["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]),
+  size: z.number().positive().max(5 * 1024 * 1024, "Resume uploads must be 5 MB or smaller."),
+});
+
+export const resumeStructureSchema = z.object({
+  nameLine: z.string().optional(),
+  contactLine: z.string().optional(),
+  sections: z.array(
+    z.object({
+      heading: z.string(),
+      items: z.array(z.string()),
+    }),
+  ),
+  skills: z.array(z.string()).default([]),
+});
+
+export type ResumeStructure = z.infer<typeof resumeStructureSchema>;
+
 export const jobInputSchema = z.object({
   sourceUrl: z.string().url().optional().or(z.literal("")),
   sourceName: z.string().optional(),

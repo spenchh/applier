@@ -42,6 +42,7 @@ export default async function TailoringPage({ params }: { params: Promise<{ id: 
               {resume ? (
                 <div className="flex gap-2">
                   <CopyButton value={resume.tailoredText} />
+                  <ButtonLink href={`/api/resume-versions/${resume.id}/docx`} tone="secondary">DOCX</ButtonLink>
                   <ButtonLink href={`/api/resume-versions/${resume.id}/print`} tone="secondary">Print</ButtonLink>
                 </div>
               ) : null}

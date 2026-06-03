@@ -8,6 +8,7 @@ InternPilot is a local-first internship application command center. It helps a s
 - Imports postings from pasted descriptions, manual fields, URLs, and official ATS-style URLs where appropriate.
 - Provides a compliant `/discover` feed with mock discovery by default and optional Adzuna, USAJOBS, and Remotive connectors when configured.
 - Parses jobs with a mock LLM provider that works without paid API keys.
+- Imports master resumes from pasted text, PDF uploads, or DOCX uploads; exports tailored resume versions as DOCX and printable HTML/PDF.
 - Lets users set target role families and industries, including software, data, product, design/UX, marketing, finance, consulting, research, operations, policy/legal, communications, sales, HR, and general internships.
 - Provides an AI wrapper configuration layer for mock, OpenAI, or Anthropic-backed generation while keeping truth checks provider-independent.
 - Scores fit against the Truth Vault.
@@ -74,19 +75,23 @@ Local database files and generated storage are ignored by git.
 
 On Vercel, the MVP can initialize an empty SQLite database in `/tmp` so the app boots cleanly, but that storage is ephemeral. Configure a persistent Postgres-compatible database before relying on hosted sign-in sessions or saved profile/application data across deployments and server restarts.
 
+Resume uploads accept PDF and DOCX files up to 5 MB. The app extracts resume text server-side and stores the editable `rawText` plus `structuredJson` in the database. Original file bytes are not required for production persistence; use Blob/Postgres-backed storage later if original-file retention becomes necessary.
+
 ## MVP Workflow
 
 1. Complete onboarding.
 2. Add Truth Vault facts.
-3. Use Discover to search/filter compliant source results, or paste/manually enter a posting.
-4. Save a discovered role into the Job Inbox, which reuses the existing dedupe pipeline.
-5. Review parsed requirements, risk flags, and fit analysis.
-6. Generate an application packet.
-7. Review tailored resume, cover letter, answers, truth check, and keyword coverage.
-8. Approve the packet.
-9. Use Manual Mode copy/checklist tools to apply.
-10. Mark the application submitted.
-11. Track outcomes and export analytics.
+3. Upload or paste a master resume.
+4. Use Discover to search/filter compliant source results, or paste/manually enter a posting.
+5. Save a discovered role into the Job Inbox, which reuses the existing dedupe pipeline.
+6. Review parsed requirements, risk flags, and fit analysis.
+7. Generate an application packet.
+8. Review tailored resume, cover letter, answers, truth check, and keyword coverage.
+9. Export tailored resume DOCX or use the HTML print/PDF path.
+10. Approve the packet.
+11. Use Manual Mode copy/checklist tools to apply.
+12. Mark the application submitted.
+13. Track outcomes and export analytics.
 
 ## Compliance Design
 
@@ -105,7 +110,7 @@ npm test
 npm run build
 ```
 
-Tests cover job parsing schema behavior, fit scoring, unsupported claim detection, approval gates, restricted platform fallback, deduplication, adapter fallback, sensitive question handling, discovery connector normalization, discovery filters, and sourced-job save inputs.
+Tests cover job parsing schema behavior, fit scoring, unsupported claim detection, approval gates, restricted platform fallback, deduplication, adapter fallback, sensitive question handling, discovery connector normalization, discovery filters, sourced-job save inputs, resume upload validation, DOCX text extraction, and DOCX export generation.
 
 ## Roadmap
 
@@ -113,13 +118,14 @@ Phase 1:
 - Manual application workflow
 - Compliant discovery feed with mock and optional external connectors
 - Resume tailoring
+- PDF/DOCX resume upload and DOCX export
 - Truth checking
 - Tracker
 - Role-family and industry targeting
 - AI wrapper settings with mock mode
 
 Phase 2:
-- Better PDF/DOCX export
+- Server-side PDF export
 - Gmail draft integration
 - Calendar reminders
 - CSV import/export

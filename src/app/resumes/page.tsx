@@ -1,4 +1,5 @@
 import { createResumeAction } from "@/app/actions";
+import { ResumeUploadForm } from "@/components/resume-upload-form";
 import { SubmitButton } from "@/components/submit-button";
 import { Badge, EmptyState, PageHeader, Panel, inputClass, labelClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
@@ -13,40 +14,47 @@ export default async function ResumesPage() {
     <>
       <PageHeader title="Resume Manager" eyebrow="ATS-friendly materials" />
       <div className="grid gap-6 xl:grid-cols-[.9fr_1.1fr]">
-        <Panel>
-          <h2 className="mb-4 text-lg font-semibold">Add master resume</h2>
-          <form action={createResumeAction} className="grid gap-4">
-            <label className={labelClass}>
-              Name
-              <input name="name" className={inputClass} defaultValue="Master Resume" required />
-            </label>
-            <label className={labelClass}>
-              Base template
-              <select name="baseType" className={inputClass} defaultValue="software_engineering">
-                <option value="software_engineering">Software engineering</option>
-                <option value="data_science">Data science</option>
-                <option value="product_management">Product management</option>
-                <option value="design_ux">Design / UX</option>
-                <option value="finance">Finance</option>
-                <option value="consulting">Consulting</option>
-                <option value="research">Research</option>
-                <option value="marketing">Marketing</option>
-                <option value="operations">Operations</option>
-                <option value="communications">Communications</option>
-                <option value="general_internship">General internship</option>
-              </select>
-            </label>
-            <label className={labelClass}>
-              Resume text
-              <textarea name="rawText" className={inputClass} rows={12} required />
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input name="isMaster" type="checkbox" defaultChecked />
-              Set as master resume
-            </label>
-            <SubmitButton>Save resume</SubmitButton>
-          </form>
-        </Panel>
+        <div className="grid content-start gap-6">
+          <Panel>
+            <h2 className="mb-4 text-lg font-semibold">Upload resume</h2>
+            <ResumeUploadForm />
+          </Panel>
+
+          <Panel>
+            <h2 className="mb-4 text-lg font-semibold">Paste resume text</h2>
+            <form action={createResumeAction} className="grid gap-4">
+              <label className={labelClass}>
+                Name
+                <input name="name" className={inputClass} defaultValue="Master Resume" required />
+              </label>
+              <label className={labelClass}>
+                Base template
+                <select name="baseType" className={inputClass} defaultValue="software_engineering">
+                  <option value="software_engineering">Software engineering</option>
+                  <option value="data_science">Data science</option>
+                  <option value="product_management">Product management</option>
+                  <option value="design_ux">Design / UX</option>
+                  <option value="finance">Finance</option>
+                  <option value="consulting">Consulting</option>
+                  <option value="research">Research</option>
+                  <option value="marketing">Marketing</option>
+                  <option value="operations">Operations</option>
+                  <option value="communications">Communications</option>
+                  <option value="general_internship">General internship</option>
+                </select>
+              </label>
+              <label className={labelClass}>
+                Resume text
+                <textarea name="rawText" className={inputClass} rows={12} required />
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input name="isMaster" type="checkbox" defaultChecked />
+                Set as master resume
+              </label>
+              <SubmitButton>Save resume</SubmitButton>
+            </form>
+          </Panel>
+        </div>
         <div className="grid gap-3">
           {profile?.resumes.length ? (
             profile.resumes.map((resume) => (
