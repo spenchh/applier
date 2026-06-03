@@ -1,9 +1,11 @@
-import { AlertTriangle, ArrowRight, CalendarClock, ClipboardCheck, Inbox, TrendingUp } from "lucide-react";
+import { AlertTriangle, ArrowRight, BookmarkPlus, CalendarClock, ClipboardCheck, Inbox, Search, TrendingUp } from "lucide-react";
 import Link from "next/link";
+import { saveSourcedJobAction } from "@/app/actions";
 import { Badge, ButtonLink, EmptyState, PageHeader, Panel, Score } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { getAnalytics } from "@/lib/services/analytics";
 import { listApplications } from "@/lib/services/application";
+import { getRecommendedDiscoveryJobs } from "@/lib/services/discovery";
 import { listJobs } from "@/lib/services/job";
 import { getPrimaryProfile } from "@/lib/services/profile";
 
@@ -11,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const user = await requireUser("/");
-  const [profile, jobs, applications, analytics] = await Promise.all([getPrimaryProfile(user.id), listJobs(user.id), listApplications(user.id), getAnalytics(user.id)]);
+  const [profile, jobs, applications, analytics, recommendations] = await Promise.all([getPrimaryProfile(user.id), listJobs(user.id), listApplications(user.id), getAnalytics(user.id), getRecommendedDiscoveryJobs(user.id)]);
   const ready = applications.filter((application) => application.status === "ready for review" || application.status === "approved");
   const recentJobs = jobs.slice(0, 4);
 
@@ -55,6 +57,41 @@ export default async function DashboardPage() {
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[1.2fr_.8fr]">
+        <Panel className="xl:col-span-2">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">Recommended for you</h2>
+              <p className="text-sm text-[var(--muted)]">Discovery roles ranked against verified profile facts.</p>
+            </div>
+            <Link href="/discover" className="inline-flex items-center gap-2 text-sm font-medium text-emerald-700">
+              Explore <Search className="h-4 w-4" aria-hidden />
+            </Link>
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            {recommendations.length ? recommendations.map((job) => (
+              <div key={job.id} className="rounded-md border border-[var(--line)] p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-medium">{job.title}</p>
+                    <p className="text-sm text-[var(--muted)]">{job.company}</p>
+                  </div>
+                  <Score value={job.fitScore} />
+                </div>
+                <p className="mt-3 line-clamp-2 text-sm text-stone-700">{job.rawDescription}</p>
+                <form action={saveSourcedJobAction} className="mt-3">
+                  <input type="hidden" name="sourcedJobId" value={job.id} />
+                  <button type="submit" className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm font-medium hover:bg-[#f0f0ea]">
+                    <BookmarkPlus className="h-4 w-4" aria-hidden />
+                    Save
+                  </button>
+                </form>
+              </div>
+            )) : (
+              <p className="text-sm text-[var(--muted)]">No discovery recommendations yet.</p>
+            )}
+          </div>
+        </Panel>
+
         <Panel>
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Ready for review</h2>

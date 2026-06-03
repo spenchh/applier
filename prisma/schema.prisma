@@ -18,6 +18,7 @@ model UserAccount {
 
   jobs     JobPosting[]
   profiles UserProfile[]
+  savedSearches SavedSearch[]
   sessions UserSession[]
 }
 
@@ -185,6 +186,79 @@ model JobQuestion {
 
   answers    ApplicationAnswer[]
   jobPosting JobPosting         @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+}
+
+model JobSource {
+  id           String      @id @default(cuid())
+  provider     String      @unique
+  label        String
+  enabled      Boolean     @default(true)
+  lastSyncedAt DateTime?
+  configJson   String      @default("{}")
+  lastError    String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  sourcedJobs SourcedJob[]
+
+  @@index([enabled, provider])
+}
+
+model SourcedJob {
+  id                       String    @id @default(cuid())
+  sourceId                 String
+  provider                 String
+  externalId               String
+  company                  String
+  title                    String
+  location                 String?
+  workplaceType            String?
+  internshipTerm           String?
+  sourceUrl                String?
+  rawDescription           String
+  parsedJson               String?
+  requiredQualifications   String    @default("[]")
+  preferredQualifications  String    @default("[]")
+  responsibilities         String    @default("[]")
+  technologies             String    @default("[]")
+  keywords                 String    @default("[]")
+  compensationMin          Int?
+  compensationMax          Int?
+  compensationText         String?
+  visaSponsorshipFriendly  Boolean   @default(false)
+  workAuthNotRequired      Boolean   @default(false)
+  deadline                 DateTime?
+  postedAt                 DateTime?
+  expiresAt                DateTime?
+  riskFlagsJson            String    @default("[]")
+  fetchedAt                DateTime  @default(now())
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+
+  source JobSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceId, externalId])
+  @@index([provider])
+  @@index([company])
+  @@index([title])
+  @@index([postedAt])
+  @@index([deadline])
+}
+
+model SavedSearch {
+  id            String    @id @default(cuid())
+  userAccountId String
+  name          String
+  queryJson     String
+  alertCadence  String    @default("none")
+  lastRunAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  userAccount UserAccount @relation(fields: [userAccountId], references: [id], onDelete: Cascade)
+
+  @@index([userAccountId])
+  @@index([alertCadence])
 }
 
 model Application {

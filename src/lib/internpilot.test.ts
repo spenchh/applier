@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { extractJson, generateAIObject, getAIProvider, getAIWrapperStatus } from "./ai-wrapper";
 import { adapterFor, chooseApplicationMode } from "./adapters";
+import { MockConnector } from "./connectors/mock";
 import { generateAnswerMock, parseJobPostingMock, truthCheckMaterial, type FactLike } from "./llm";
 import { canSubmitApplication } from "./services/application";
+import { matchesDiscoveryQuery, normalizeDiscoveryQuery, sourcedJobToJobInput } from "./services/discovery";
 import { calculateFit } from "./services/fit";
 import { dedupeHash, extractTechnologies, isSensitiveQuestion } from "./text";
 
@@ -121,5 +123,64 @@ describe("InternPilot core behavior", () => {
       z.object({ summary: z.string() }),
     );
     expect(result.summary).toBe("ready");
+  });
+
+  it("normalizes mock discovery jobs into parseable job postings", async () => {
+    const jobs = await new MockConnector().search({ keyword: "computer engineering" });
+    const first = jobs[0];
+    expect(first?.provider).toBe("mock");
+    const parsed = parseJobPostingMock({
+      company: first.company,
+      title: first.title,
+      location: first.location,
+      rawDescription: first.rawDescription,
+      sourceUrl: first.sourceUrl,
+    });
+    expect(parsed.title).toContain("Computer Engineering");
+    expect(parsed.keywords.length).toBeGreaterThan(0);
+  });
+
+  it("validates and applies discovery filters", () => {
+    const query = normalizeDiscoveryQuery({
+      keyword: "engineering",
+      workplaceType: "hybrid",
+      postedWithinDays: "14",
+      visaSponsorshipFriendly: "true",
+    });
+    const job = {
+      title: "Computer Engineering Intern",
+      company: "Northstar Robotics",
+      location: "Chicago, IL",
+      workplaceType: "hybrid",
+      internshipTerm: "summer",
+      provider: "mock",
+      rawDescription: "Embedded systems engineering internship with Python.",
+      keywords: JSON.stringify(["engineering", "python"]),
+      compensationMin: 28,
+      compensationMax: 34,
+      visaSponsorshipFriendly: true,
+      workAuthNotRequired: false,
+      deadline: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
+      postedAt: new Date(),
+    };
+    expect(matchesDiscoveryQuery(job, query)).toBe(true);
+    expect(matchesDiscoveryQuery({ ...job, workplaceType: "remote" }, query)).toBe(false);
+  });
+
+  it("keeps sourced job saves on the existing dedupe basis", () => {
+    const sourced = {
+      company: "Northstar Robotics",
+      title: "Computer Engineering Intern",
+      location: "Chicago, IL",
+      internshipTerm: "summer",
+      workplaceType: "hybrid",
+      sourceUrl: "https://careers.example.com/northstar-robotics/computer-engineering-intern",
+      provider: "mock",
+      rawDescription: "Computer Engineering Intern supporting embedded systems and Python.",
+    };
+    const input = sourcedJobToJobInput(sourced);
+    const first = dedupeHash(input);
+    const second = dedupeHash({ ...input, sourceUrl: input.sourceUrl?.replace("https://", "http://") });
+    expect(first).toBe(second);
   });
 });

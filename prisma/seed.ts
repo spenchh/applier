@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { prisma } from "../src/lib/db";
 import { ensureDatabaseReady } from "../src/lib/runtime-db";
 import { approveApplication, markSubmitted } from "../src/lib/services/application";
+import { ensureDiscoveryPool, saveDiscoverySearch } from "../src/lib/services/discovery";
 import { createJobFromInput } from "../src/lib/services/job";
 import { createProfileFact, upsertProfile } from "../src/lib/services/profile";
 import { createResume } from "../src/lib/services/resume";
@@ -11,6 +12,8 @@ import { generateApplicationPacket } from "../src/lib/services/tailoring";
 async function clearData() {
   await ensureDatabaseReady();
   await prisma.auditLog.deleteMany();
+  await prisma.sourcedJob.deleteMany();
+  await prisma.jobSource.deleteMany();
   await prisma.userSession.deleteMany();
   await prisma.userAccount.deleteMany();
   await prisma.company.deleteMany();
@@ -115,6 +118,9 @@ Question: Tell us about a time you coordinated a project.`,
   const application = await generateApplicationPacket(operationsJob.id, profile.id);
   await approveApplication(application.id, user.id);
   await markSubmitted(application.id, user.id);
+
+  await ensureDiscoveryPool({ keyword: "computer engineering", location: "Chicago" });
+  await saveDiscoverySearch(user.id, "Computer engineering internships", { keyword: "computer engineering", location: "Chicago" }, "weekly");
 }
 
 async function main() {

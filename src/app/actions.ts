@@ -8,6 +8,7 @@ import { formBool, formString, fromCsv } from "@/lib/json";
 import { ensureDatabaseReady } from "@/lib/runtime-db";
 import { jobInputSchema, profileFactSchema, profileSchema, resumeSchema } from "@/lib/schemas";
 import { approveApplication, markSubmitted, updateApplicationStatus } from "@/lib/services/application";
+import { normalizeDiscoveryQuery, saveDiscoverySearch, saveSourcedJobToInbox } from "@/lib/services/discovery";
 import { createJobFromInput } from "@/lib/services/job";
 import { createProfileFact, ensureProfile, upsertProfile } from "@/lib/services/profile";
 import { createResume } from "@/lib/services/resume";
@@ -119,6 +120,35 @@ export async function createJobAction(formData: FormData) {
   const job = await createJobFromInput({ ...parsed, userAccountId: user.id });
   revalidatePath("/jobs");
   redirect(`/jobs/${job.id}`);
+}
+
+export async function saveSourcedJobAction(formData: FormData) {
+  const user = await requireUser("/discover");
+  const sourcedJobId = formString(formData, "sourcedJobId");
+  const job = await saveSourcedJobToInbox(sourcedJobId, user.id);
+  revalidatePath("/discover");
+  revalidatePath("/jobs");
+  redirect(`/jobs/${job.id}`);
+}
+
+export async function saveDiscoverySearchAction(formData: FormData) {
+  const user = await requireUser("/discover");
+  const query = normalizeDiscoveryQuery({
+    keyword: formString(formData, "keyword"),
+    location: formString(formData, "location"),
+    workplaceType: formString(formData, "workplaceType"),
+    internshipTerm: formString(formData, "internshipTerm"),
+    postedWithinDays: formString(formData, "postedWithinDays"),
+    company: formString(formData, "company"),
+    minCompensation: formString(formData, "minCompensation"),
+    maxCompensation: formString(formData, "maxCompensation"),
+    visaSponsorshipFriendly: formBool(formData, "visaSponsorshipFriendly") ? "true" : "",
+    workAuthNotRequired: formBool(formData, "workAuthNotRequired") ? "true" : "",
+    deadlineWithinDays: formString(formData, "deadlineWithinDays"),
+    source: formString(formData, "source"),
+  });
+  await saveDiscoverySearch(user.id, formString(formData, "searchName"), query, formString(formData, "alertCadence") || "none");
+  revalidatePath("/discover");
 }
 
 export async function generatePacketAction(formData: FormData) {

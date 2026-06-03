@@ -6,6 +6,7 @@ InternPilot is a local-first internship application command center. It helps a s
 
 - Supports email/password sign-in with remembered sessions, then stores profile basics, resumes, verified facts, skills, projects, education, work history, and eligibility facts per account.
 - Imports postings from pasted descriptions, manual fields, URLs, and official ATS-style URLs where appropriate.
+- Provides a compliant `/discover` feed with mock discovery by default and optional Adzuna, USAJOBS, and Remotive connectors when configured.
 - Parses jobs with a mock LLM provider that works without paid API keys.
 - Lets users set target role families and industries, including software, data, product, design/UX, marketing, finance, consulting, research, operations, policy/legal, communications, sales, HR, and general internships.
 - Provides an AI wrapper configuration layer for mock, OpenAI, or Anthropic-backed generation while keeping truth checks provider-independent.
@@ -46,6 +47,10 @@ Open [http://localhost:3000](http://localhost:3000).
 - `APP_BASE_URL`: local app URL.
 - `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`: optional future provider keys.
 - `EMAIL_FROM`, `RESEND_API_KEY`, `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`: optional future email draft/send integrations.
+- `DISCOVERY_CACHE_TTL_MINUTES`, `DISCOVERY_USER_AGENT`: discovery connector cache/user-agent controls.
+- `ADZUNA_APP_ID`, `ADZUNA_APP_KEY`, `ADZUNA_COUNTRY`: optional Adzuna search connector.
+- `USAJOBS_API_KEY`, `USAJOBS_USER_AGENT`: optional USAJOBS search connector.
+- `REMOTIVE_ENABLED`: set to `true` to opt into Remotive's public remote-jobs API.
 
 ## Database And Seed Data
 
@@ -73,20 +78,23 @@ On Vercel, the MVP can initialize an empty SQLite database in `/tmp` so the app 
 
 1. Complete onboarding.
 2. Add Truth Vault facts.
-3. Paste or manually enter a job posting.
-4. Review parsed requirements, risk flags, and fit analysis.
-5. Generate an application packet.
-6. Review tailored resume, cover letter, answers, truth check, and keyword coverage.
-7. Approve the packet.
-8. Use Manual Mode copy/checklist tools to apply.
-9. Mark the application submitted.
-10. Track outcomes and export analytics.
+3. Use Discover to search/filter compliant source results, or paste/manually enter a posting.
+4. Save a discovered role into the Job Inbox, which reuses the existing dedupe pipeline.
+5. Review parsed requirements, risk flags, and fit analysis.
+6. Generate an application packet.
+7. Review tailored resume, cover letter, answers, truth check, and keyword coverage.
+8. Approve the packet.
+9. Use Manual Mode copy/checklist tools to apply.
+10. Mark the application submitted.
+11. Track outcomes and export analytics.
 
 ## Compliance Design
 
 InternPilot defaults to Manual Mode. Official adapter scaffolds exist for Greenhouse, Lever, Ashby, SmartRecruiters, and email, but they fall back unless credentials and permitted integrations are configured. All submission paths check approval state first and write audit records.
 
 Restricted platform URLs are stored for tracking and tailoring only. The app does not scrape or automate activity on those sites.
+
+Discovery connectors only use configured, permitted sources. Mock discovery works with no keys. Adzuna and USAJOBS require API keys, and Remotive is opt-in via `REMOTIVE_ENABLED=true`. Connector failures are shown in the UI and do not block the app.
 
 ## Testing
 
@@ -97,12 +105,13 @@ npm test
 npm run build
 ```
 
-Tests cover job parsing schema behavior, fit scoring, unsupported claim detection, approval gates, restricted platform fallback, deduplication, adapter fallback, and sensitive question handling.
+Tests cover job parsing schema behavior, fit scoring, unsupported claim detection, approval gates, restricted platform fallback, deduplication, adapter fallback, sensitive question handling, discovery connector normalization, discovery filters, and sourced-job save inputs.
 
 ## Roadmap
 
 Phase 1:
 - Manual application workflow
+- Compliant discovery feed with mock and optional external connectors
 - Resume tailoring
 - Truth checking
 - Tracker

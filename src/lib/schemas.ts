@@ -59,6 +59,21 @@ export const jobInputSchema = z.object({
   rawDescription: z.string().min(20),
 });
 
+export const discoveryQuerySchema = z.object({
+  keyword: z.string().optional(),
+  location: z.string().optional(),
+  workplaceType: z.string().optional(),
+  internshipTerm: z.string().optional(),
+  postedWithinDays: z.number().positive().optional(),
+  company: z.string().optional(),
+  minCompensation: z.number().positive().optional(),
+  maxCompensation: z.number().positive().optional(),
+  visaSponsorshipFriendly: z.boolean().optional(),
+  workAuthNotRequired: z.boolean().optional(),
+  deadlineWithinDays: z.number().positive().optional(),
+  source: z.string().optional(),
+});
+
 export const parsedJobSchema = z.object({
   company: z.string(),
   title: z.string(),

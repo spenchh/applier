@@ -1,4 +1,4 @@
-import { BarChart3, BriefcaseBusiness, ClipboardCheck, FileText, Home, Inbox, LogIn, LogOut, Settings, ShieldCheck, UserRound } from "lucide-react";
+import { BarChart3, BriefcaseBusiness, ClipboardCheck, FileText, Home, Inbox, LogIn, LogOut, Search, Settings, ShieldCheck, UserRound } from "lucide-react";
 import Link from "next/link";
 import { signOutAction } from "@/app/actions";
 import { currentUser } from "@/lib/auth";
@@ -8,6 +8,7 @@ const nav = [
   { href: "/onboarding", label: "Onboarding", icon: ShieldCheck },
   { href: "/profile", label: "Truth Vault", icon: UserRound },
   { href: "/resumes", label: "Resumes", icon: FileText },
+  { href: "/discover", label: "Discover", icon: Search },
   { href: "/jobs", label: "Job Inbox", icon: Inbox },
   { href: "/applications/review", label: "Review Queue", icon: ClipboardCheck },
   { href: "/tracker", label: "Tracker", icon: BriefcaseBusiness },
