@@ -96,8 +96,19 @@ export async function markOAuthSetupMissing(userId: string, provider: OAuthProvi
     label: config.label,
     config: { authMode: "oauth", missing: missing.join(", ") },
     status: "needs_setup",
-    lastError: `Ask the app owner to configure ${missing.join(", ")}.`,
+    lastError: `${config.label} sign-in is not configured yet. The app owner needs to add provider OAuth credentials before this connection can complete.`,
   });
+}
+
+export function oauthSetupStatus(provider: OAuthProvider) {
+  const config = providerConfig(provider, "https://example.com");
+  const missing = missingEnvFor(provider);
+  return {
+    provider,
+    label: config.label,
+    configured: missing.length === 0,
+    missing,
+  };
 }
 
 export function isOAuthProvider(value: string): value is OAuthProvider {

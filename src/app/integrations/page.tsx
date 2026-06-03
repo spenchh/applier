@@ -1,9 +1,10 @@
-import { importMomentumTextAction } from "@/app/actions";
+import { importMomentumTextAction, syncGitHubAction } from "@/app/actions";
 import { Badge, PageHeader, Panel, inputClass, labelClass } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
 import { requireUser } from "@/lib/auth";
 import { readJson } from "@/lib/json";
 import { getMomentumDashboard } from "@/lib/services/momentum";
+import { oauthSetupStatus } from "@/lib/services/oauth";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,14 @@ export default async function IntegrationsPage() {
   const integrations = new Map(dashboard.integrations.map((integration) => [integration.provider, integration]));
   const canvas = integrations.get("canvas");
   const github = integrations.get("github");
+  const canvasConfig = readJson<{ canvasUrl?: string }>(canvas?.configJson, {});
+  const githubConfig = readJson<{ username?: string }>(github?.configJson, {});
+  const setup = {
+    canvas: oauthSetupStatus("canvas"),
+    github: oauthSetupStatus("github"),
+    google: oauthSetupStatus("google_calendar"),
+    outlook: oauthSetupStatus("outlook"),
+  };
 
   return (
     <>
@@ -21,23 +30,45 @@ export default async function IntegrationsPage() {
         <Panel>
           <ConnectionHeader title="Canvas" status={canvas?.status ?? "not_connected"} syncedAt={canvas?.lastSyncedAt} />
           <p className="mt-2 text-sm text-stone-700">Sign into Canvas and approve access. Momentum will pull upcoming assignments into your plan.</p>
-          <form action="/api/integrations/canvas/connect" method="get" className="mt-4 grid gap-4">
-            <label className={labelClass}>
-              Canvas URL
-              <input name="canvasUrl" className={inputClass} defaultValue={readJson<{ canvasUrl?: string }>(canvas?.configJson, {}).canvasUrl ?? "https://canvas.northwestern.edu"} required />
-            </label>
-            {canvas?.lastError ? <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">{canvas.lastError}</p> : null}
-            <button type="submit" className="liquid-button rounded-lg px-4 py-2.5 text-sm font-medium text-white shadow-sm">Connect with Canvas</button>
-          </form>
+          {setup.canvas.configured ? (
+            <form action="/api/integrations/canvas/connect" method="get" className="mt-4 grid gap-4">
+              <label className={labelClass}>
+                Canvas URL
+                <input name="canvasUrl" className={inputClass} defaultValue={canvasConfig.canvasUrl ?? "https://canvas.northwestern.edu"} required />
+              </label>
+              <FriendlyError error={canvas?.lastError} provider="Canvas" />
+              <button type="submit" className="liquid-button rounded-lg px-4 py-2.5 text-sm font-medium text-white shadow-sm">Sign in with Canvas</button>
+            </form>
+          ) : (
+            <SetupNotice
+              title="Canvas sign-in is not ready yet"
+              body="Canvas requires a Developer Key from Northwestern or the Canvas admin before Momentum can open the provider login screen. Use the syllabus or class-notes importer below for now."
+            />
+          )}
         </Panel>
 
         <Panel>
           <ConnectionHeader title="GitHub" status={github?.status ?? "not_connected"} syncedAt={github?.lastSyncedAt} />
-          <p className="mt-2 text-sm text-stone-700">Sign into GitHub and Momentum will turn repositories into proof cards and project-maintenance tasks.</p>
-          <form action="/api/integrations/github/connect" method="get" className="mt-4 grid gap-4">
-            {github?.lastError ? <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">{github.lastError}</p> : null}
-            <button type="submit" className="liquid-button rounded-lg px-4 py-2.5 text-sm font-medium text-white shadow-sm">Connect with GitHub</button>
+          <p className="mt-2 text-sm text-stone-700">Momentum can read public repositories now, then turn recent projects into proof cards and maintenance tasks.</p>
+          <form action={syncGitHubAction} className="mt-4 grid gap-4">
+            <label className={labelClass}>
+              GitHub username
+              <input name="username" className={inputClass} defaultValue={githubConfig.username ?? ""} placeholder="spenchh" autoComplete="off" required />
+            </label>
+            <FriendlyError error={github?.lastError} provider="GitHub" />
+            <SubmitButton>Sync public GitHub</SubmitButton>
           </form>
+          {setup.github.configured ? (
+            <form action="/api/integrations/github/connect" method="get" className="mt-4 border-t border-[var(--line)] pt-4">
+              <p className="text-sm text-[var(--muted)]">For private repositories, use GitHub&apos;s consent screen.</p>
+              <button type="submit" className="mt-3 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm font-medium shadow-sm transition hover:-translate-y-0.5">Sign in with GitHub</button>
+            </form>
+          ) : (
+            <SetupNotice
+              title="Private GitHub sign-in is not ready yet"
+              body="The public sync above works without tokens. Private repositories need a GitHub OAuth app configured by the app owner before provider sign-in can work."
+            />
+          )}
         </Panel>
 
         <ImportPanel source="syllabus" title="Syllabus or class notes" placeholder={"Paste assignment lines, deadlines, exam dates, or class project requirements.\nExample: ECE lab report due 6/12; final project demo 6/20"} />
@@ -48,16 +79,22 @@ export default async function IntegrationsPage() {
           <ConnectionHeader title="Google Calendar and Outlook" status={oauthStatus(integrations)} syncedAt={integrations.get("google_calendar")?.lastSyncedAt ?? integrations.get("outlook")?.lastSyncedAt ?? null} />
           <p className="mt-2 text-sm text-stone-700">Connect your calendar through the provider sign-in screen. Momentum reads upcoming events and turns them into realistic commitments.</p>
           <div className="mt-4 grid gap-3 md:grid-cols-2">
-            <form action="/api/integrations/google_calendar/connect" method="get" className="rounded-lg border border-[var(--line)] bg-[var(--surface-soft)] p-3">
-              <p className="font-medium">Google Calendar</p>
-              <p className="mt-1 text-sm text-[var(--muted)]">Uses Google&apos;s consent screen; no password is handled by Momentum.</p>
-              <button type="submit" className="mt-3 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm font-medium shadow-sm transition hover:-translate-y-0.5">Connect Google</button>
-            </form>
-            <form action="/api/integrations/outlook/connect" method="get" className="rounded-lg border border-[var(--line)] bg-[var(--surface-soft)] p-3">
-              <p className="font-medium">Outlook / Microsoft 365</p>
-              <p className="mt-1 text-sm text-[var(--muted)]">Uses Microsoft sign-in and delegated Calendar.Read permission.</p>
-              <button type="submit" className="mt-3 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm font-medium shadow-sm transition hover:-translate-y-0.5">Connect Outlook</button>
-            </form>
+            <ProviderLoginAction
+              title="Google Calendar"
+              body="Uses Google's consent screen; no password is handled by Momentum."
+              configured={setup.google.configured}
+              action="/api/integrations/google_calendar/connect"
+              buttonLabel="Sign in with Google"
+              setupBody="Google Calendar needs an OAuth app configured before provider sign-in can work."
+            />
+            <ProviderLoginAction
+              title="Outlook / Microsoft 365"
+              body="Uses Microsoft sign-in and delegated calendar permission."
+              configured={setup.outlook.configured}
+              action="/api/integrations/outlook/connect"
+              buttonLabel="Sign in with Microsoft"
+              setupBody="Microsoft Calendar needs an Azure app registration configured before provider sign-in can work."
+            />
           </div>
         </Panel>
       </div>
@@ -66,7 +103,7 @@ export default async function IntegrationsPage() {
 }
 
 function ConnectionHeader({ title, status, syncedAt }: { title: string; status: string; syncedAt?: Date | null }) {
-  const tone = status === "connected" ? "good" : status === "error" || status === "needs_setup" ? "warn" : status === "needs_oauth" ? "info" : "neutral";
+  const tone = status === "connected" ? "good" : status === "error" ? "bad" : status === "needs_setup" ? "warn" : status === "needs_oauth" ? "info" : "neutral";
   return (
     <div className="flex items-start justify-between gap-3">
       <div>
@@ -74,6 +111,53 @@ function ConnectionHeader({ title, status, syncedAt }: { title: string; status: 
         <p className="mt-1 text-xs text-[var(--muted)]">{syncedAt ? `Last synced ${syncedAt.toLocaleString()}` : "Not synced yet"}</p>
       </div>
       <Badge tone={tone}>{status.replaceAll("_", " ")}</Badge>
+    </div>
+  );
+}
+
+function FriendlyError({ error, provider }: { error?: string | null; provider: string }) {
+  const message = friendlyLastError(error, provider);
+  if (!message) return null;
+  return <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">{message}</p>;
+}
+
+function SetupNotice({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="mt-4 rounded-lg bg-[var(--surface-soft)] p-4 text-sm">
+      <p className="font-medium text-[var(--foreground)]">{title}</p>
+      <p className="mt-1 text-[var(--muted)]">{body}</p>
+    </div>
+  );
+}
+
+function ProviderLoginAction({
+  title,
+  body,
+  configured,
+  action,
+  buttonLabel,
+  setupBody,
+}: {
+  title: string;
+  body: string;
+  configured: boolean;
+  action: string;
+  buttonLabel: string;
+  setupBody: string;
+}) {
+  return (
+    <div className="rounded-lg bg-[var(--surface-soft)] p-4">
+      <p className="font-medium">{title}</p>
+      <p className="mt-1 text-sm text-[var(--muted)]">{body}</p>
+      {configured ? (
+        <form action={action} method="get">
+          <button type="submit" className="mt-3 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm font-medium shadow-sm transition hover:-translate-y-0.5">
+            {buttonLabel}
+          </button>
+        </form>
+      ) : (
+        <p className="mt-3 text-sm text-amber-800">{setupBody}</p>
+      )}
     </div>
   );
 }
@@ -102,4 +186,12 @@ function oauthStatus(integrations: Map<string, { status: string }>) {
   if (google === "needs_setup" || outlook === "needs_setup") return "needs_setup";
   if (google === "needs_oauth" || outlook === "needs_oauth") return "needs_oauth";
   return "not_connected";
+}
+
+function friendlyLastError(error: string | null | undefined, provider: string) {
+  if (!error) return null;
+  if (/[A-Z0-9]+_CLIENT_(ID|SECRET)/.test(error) || error.toLowerCase().includes("oauth credentials")) {
+    return `${provider} sign-in is not configured yet. Use the available public sync or paste import option for now.`;
+  }
+  return error;
 }
