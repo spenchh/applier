@@ -7,6 +7,8 @@ import { inputClass, labelClass } from "@/components/ui";
 export function SignInForm({ next }: { next: string }) {
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [email, setEmail] = useState(() => (typeof window === "undefined" ? "" : window.localStorage.getItem("momentum:remembered-email") ?? ""));
+  const [remember, setRemember] = useState(true);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -16,6 +18,7 @@ export function SignInForm({ next }: { next: string }) {
     const response = await fetch("/api/auth/sign-in", {
       method: "POST",
       body: formData,
+      credentials: "same-origin",
     });
     setPending(false);
 
@@ -25,6 +28,9 @@ export function SignInForm({ next }: { next: string }) {
       return;
     }
 
+    const submittedEmail = String(formData.get("email") ?? "");
+    if (remember) window.localStorage.setItem("momentum:remembered-email", submittedEmail);
+    else window.localStorage.removeItem("momentum:remembered-email");
     window.location.assign(next);
   }
 
@@ -38,20 +44,20 @@ export function SignInForm({ next }: { next: string }) {
       ) : null}
       <label className={labelClass}>
         Email
-        <input name="email" className={inputClass} type="email" autoComplete="email" required />
+        <input name="email" className={inputClass} type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
       </label>
       <label className={labelClass}>
         Password
         <input name="password" className={inputClass} type="password" autoComplete="current-password" required />
       </label>
       <label className="flex items-center gap-2 text-sm text-stone-700">
-        <input name="remember" type="checkbox" defaultChecked className="h-4 w-4 rounded border-[var(--line)]" />
+        <input name="remember" type="checkbox" checked={remember} onChange={(event) => setRemember(event.target.checked)} className="h-4 w-4 rounded border-[var(--line)]" />
         Remember this device for 90 days
       </label>
       <button
         type="submit"
         disabled={pending}
-        className="inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-[var(--brand-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+        className="liquid-button inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
       >
         {pending ? <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden /> : null}
         Sign in

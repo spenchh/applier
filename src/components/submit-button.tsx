@@ -6,8 +6,8 @@ import { useFormStatus } from "react-dom";
 export function SubmitButton({ children, tone = "primary" }: { children: React.ReactNode; tone?: "primary" | "secondary" | "danger" }) {
   const { pending } = useFormStatus();
   const styles = {
-    primary: "bg-[var(--brand)] text-white shadow-sm hover:bg-[var(--brand-hover)]",
-    secondary: "border border-[var(--line)] bg-[var(--surface)] text-[var(--foreground)] shadow-sm hover:bg-[var(--surface-soft)]",
+    primary: "liquid-button text-white shadow-sm",
+    secondary: "border border-[var(--line)] bg-[var(--surface)] text-[var(--foreground)] shadow-sm hover:-translate-y-0.5 hover:bg-[var(--surface-soft)]",
     danger: "bg-rose-700 text-white hover:bg-rose-800",
   };
   return (

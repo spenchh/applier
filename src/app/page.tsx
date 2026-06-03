@@ -16,9 +16,9 @@ export default async function DashboardPage() {
       <PageHeader title="Command Center" eyebrow="Momentum" action={<ButtonLink href="/coach">Run check-in</ButtonLink>} />
 
       <div className="grid gap-4 md:grid-cols-4">
-        <Metric title="Accountability" value={`${dashboard.metrics.accountabilityScore}%`} icon={<Target className="h-4 w-4 text-emerald-700" aria-hidden />} />
-        <Metric title="Done this week" value={dashboard.metrics.doneThisWeek} icon={<CheckCircle2 className="h-4 w-4 text-sky-700" aria-hidden />} />
-        <Metric title="Proof cards" value={dashboard.metrics.proofThisWeek} icon={<LibraryBig className="h-4 w-4 text-amber-700" aria-hidden />} />
+        <Metric title="Accountability" value={`${dashboard.metrics.accountabilityScore}%`} icon={<Target className="h-4 w-4 text-[var(--brand)]" aria-hidden />} />
+        <Metric title="Done this week" value={dashboard.metrics.doneThisWeek} icon={<CheckCircle2 className="h-4 w-4 text-[var(--accent)]" aria-hidden />} />
+        <Metric title="Proof cards" value={dashboard.metrics.proofThisWeek} icon={<LibraryBig className="h-4 w-4 text-[var(--accent-warm)]" aria-hidden />} />
         <Metric title="Connections" value={dashboard.metrics.connectedCount} icon={<PlugZap className="h-4 w-4 text-rose-700" aria-hidden />} />
       </div>
 
@@ -59,7 +59,7 @@ export default async function DashboardPage() {
           <Panel>
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">Risk radar</h2>
-              <CircleAlert className="h-4 w-4 text-amber-700" aria-hidden />
+              <CircleAlert className="h-4 w-4 text-[var(--accent-warm)]" aria-hidden />
             </div>
             <div className="mt-4 grid gap-3">
               <RadarRow label="Overdue" count={dashboard.overdue.length} tone={dashboard.overdue.length ? "warn" : "good"} />
@@ -72,7 +72,7 @@ export default async function DashboardPage() {
           <Panel>
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">Active goals</h2>
-              <Link href="/goals" className="inline-flex items-center gap-1 text-sm font-medium text-emerald-700">
+              <Link href="/goals" className="inline-flex items-center gap-1 text-sm font-medium text-[var(--brand)]">
                 Open <ArrowRight className="h-4 w-4" aria-hidden />
               </Link>
             </div>
@@ -140,7 +140,7 @@ function QuickComplete({ taskId }: { taskId: string }) {
       <input type="hidden" name="taskId" value={taskId} />
       <input type="hidden" name="returnTo" value="/" />
       <input name="proofNote" className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm outline-none ring-[var(--focus)] transition focus:border-[var(--brand)] focus:ring-4" placeholder="Proof note or link" />
-      <button type="submit" className="rounded-lg bg-[var(--brand)] px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-[var(--brand-hover)]">
+      <button type="submit" className="liquid-button rounded-lg px-3 py-2 text-sm font-medium text-white shadow-sm">
         Mark done
       </button>
     </form>

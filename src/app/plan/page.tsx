@@ -106,7 +106,7 @@ function TaskRow({ task }: { task: { id: string; title: string; description: str
           <input type="hidden" name="taskId" value={task.id} />
           <input type="hidden" name="returnTo" value="/plan" />
           <input name="proofNote" className={inputClass} placeholder="Proof note or link" />
-          <button type="submit" className="rounded-lg bg-[var(--brand)] px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-[var(--brand-hover)]">
+          <button type="submit" className="liquid-button rounded-lg px-3 py-2 text-sm font-medium text-white shadow-sm">
             Complete
           </button>
         </form>

@@ -67,7 +67,7 @@ export default async function EvidencePage() {
                       </div>
                     ) : null}
                   </div>
-                  {item.url ? <Link className="text-sm font-medium text-emerald-700" href={item.url} target="_blank">Open proof</Link> : null}
+                  {item.url ? <Link className="text-sm font-medium text-[var(--brand)]" href={item.url} target="_blank">Open proof</Link> : null}
                 </div>
               </Panel>
             );
