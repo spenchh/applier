@@ -37,6 +37,7 @@ export default async function OnboardingPage() {
             linkedinUrl: profile?.linkedinUrl ?? "",
             websiteUrl: profile?.websiteUrl ?? "",
           }}
+          showAssistant
         />
       </Panel>
     </>
