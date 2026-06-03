@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { getAIWrapperStatus } from "./ai-wrapper";
+import { z } from "zod";
+import { extractJson, generateAIObject, getAIProvider, getAIWrapperStatus } from "./ai-wrapper";
 import { adapterFor, chooseApplicationMode } from "./adapters";
 import { generateAnswerMock, parseJobPostingMock, truthCheckMaterial, type FactLike } from "./llm";
 import { canSubmitApplication } from "./services/application";
@@ -99,5 +100,26 @@ describe("InternPilot core behavior", () => {
     const status = getAIWrapperStatus({ provider: "mock" });
     expect(status.configured).toBe(true);
     expect(status.mode).toBe("local_mock");
+  });
+
+  it("falls external AI providers back to mock mode when keys are absent", () => {
+    delete process.env.OPENAI_API_KEY;
+    const status = getAIWrapperStatus({ provider: "openai" });
+    expect(status.configured).toBe(false);
+    expect(status.effectiveProvider).toBe("mock");
+    expect(getAIProvider({ provider: "openai" }).name).toBe("mock");
+  });
+
+  it("extracts structured JSON from fenced model responses", () => {
+    expect(extractJson("```json\n{\"fit\":92}\n```")).toEqual({ fit: 92 });
+  });
+
+  it("can generate structured objects through the mock wrapper", async () => {
+    const result = await generateAIObject(
+      { provider: "mock" },
+      { prompt: "{\"summary\":\"ready\"}" },
+      z.object({ summary: z.string() }),
+    );
+    expect(result.summary).toBe("ready");
   });
 });

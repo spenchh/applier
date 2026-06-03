@@ -25,7 +25,8 @@ export default async function SettingsPage() {
         <Panel>
           <h2 className="mb-4 text-lg font-semibold">AI wrapper</h2>
           <div className="mb-4 rounded-md border border-[var(--line)] bg-stone-50 p-3 text-sm text-stone-700">
-            <p className="font-medium">Current mode: {aiStatus.mode === "local_mock" ? "Local mock" : aiStatus.provider}</p>
+            <p className="font-medium">Current mode: {aiStatus.mode === "local_mock" ? "Local mock" : aiStatus.effectiveProvider}</p>
+            <p>Selected provider: {aiStatus.provider}</p>
             <p>Model: {aiStatus.model}</p>
             {aiStatus.warning ? <p className="mt-2 text-amber-700">{aiStatus.warning}</p> : null}
           </div>
