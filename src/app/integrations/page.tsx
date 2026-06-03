@@ -1,4 +1,4 @@
-import { importMomentumTextAction, saveMomentumIntegrationAction, syncCanvasAction, syncGitHubAction } from "@/app/actions";
+import { importMomentumTextAction } from "@/app/actions";
 import { Badge, PageHeader, Panel, inputClass, labelClass } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
 import { requireUser } from "@/lib/auth";
@@ -20,35 +20,23 @@ export default async function IntegrationsPage() {
       <div className="grid gap-6 xl:grid-cols-2">
         <Panel>
           <ConnectionHeader title="Canvas" status={canvas?.status ?? "not_connected"} syncedAt={canvas?.lastSyncedAt} />
-          <p className="mt-2 text-sm text-stone-700">Sync upcoming assignments from Canvas into actionable commitments. Tokens are used for this sync only and are not saved.</p>
-          <form action={syncCanvasAction} className="mt-4 grid gap-4">
+          <p className="mt-2 text-sm text-stone-700">Sign into Canvas and approve access. Momentum will pull upcoming assignments into your plan.</p>
+          <form action="/api/integrations/canvas/connect" method="get" className="mt-4 grid gap-4">
             <label className={labelClass}>
               Canvas URL
               <input name="canvasUrl" className={inputClass} defaultValue={readJson<{ canvasUrl?: string }>(canvas?.configJson, {}).canvasUrl ?? "https://canvas.northwestern.edu"} required />
             </label>
-            <label className={labelClass}>
-              Canvas access token
-              <input name="accessToken" className={inputClass} type="password" placeholder="Paste token for one-time sync" required />
-            </label>
             {canvas?.lastError ? <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">{canvas.lastError}</p> : null}
-            <SubmitButton>Sync Canvas assignments</SubmitButton>
+            <button type="submit" className="liquid-button rounded-lg px-4 py-2.5 text-sm font-medium text-white shadow-sm">Connect with Canvas</button>
           </form>
         </Panel>
 
         <Panel>
           <ConnectionHeader title="GitHub" status={github?.status ?? "not_connected"} syncedAt={github?.lastSyncedAt} />
-          <p className="mt-2 text-sm text-stone-700">Turn repositories and stale projects into proof cards and maintenance commitments.</p>
-          <form action={syncGitHubAction} className="mt-4 grid gap-4">
-            <label className={labelClass}>
-              GitHub username
-              <input name="username" className={inputClass} defaultValue={readJson<{ username?: string }>(github?.configJson, {}).username ?? ""} placeholder="spenchh" />
-            </label>
-            <label className={labelClass}>
-              Optional access token
-              <input name="accessToken" className={inputClass} type="password" placeholder="Needed for private repos" />
-            </label>
+          <p className="mt-2 text-sm text-stone-700">Sign into GitHub and Momentum will turn repositories into proof cards and project-maintenance tasks.</p>
+          <form action="/api/integrations/github/connect" method="get" className="mt-4 grid gap-4">
             {github?.lastError ? <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">{github.lastError}</p> : null}
-            <SubmitButton>Sync GitHub proof</SubmitButton>
+            <button type="submit" className="liquid-button rounded-lg px-4 py-2.5 text-sm font-medium text-white shadow-sm">Connect with GitHub</button>
           </form>
         </Panel>
 
@@ -58,23 +46,17 @@ export default async function IntegrationsPage() {
 
         <Panel>
           <ConnectionHeader title="Google Calendar and Outlook" status={oauthStatus(integrations)} syncedAt={integrations.get("google_calendar")?.lastSyncedAt ?? integrations.get("outlook")?.lastSyncedAt ?? null} />
-          <p className="mt-2 text-sm text-stone-700">Calendar/email sync needs OAuth app credentials before it can be safely enabled. The app is ready for those connection slots, but it should not ask for your Google or Microsoft password.</p>
+          <p className="mt-2 text-sm text-stone-700">Connect your calendar through the provider sign-in screen. Momentum reads upcoming events and turns them into realistic commitments.</p>
           <div className="mt-4 grid gap-3 md:grid-cols-2">
-            <form action={saveMomentumIntegrationAction} className="rounded-lg border border-[var(--line)] bg-[var(--surface-soft)] p-3">
-              <input type="hidden" name="provider" value="google_calendar" />
-              <input type="hidden" name="label" value="Google Calendar" />
-              <input type="hidden" name="note" value="Needs OAuth credentials" />
+            <form action="/api/integrations/google_calendar/connect" method="get" className="rounded-lg border border-[var(--line)] bg-[var(--surface-soft)] p-3">
               <p className="font-medium">Google Calendar</p>
-              <p className="mt-1 text-sm text-[var(--muted)]">Reads events once OAuth is configured.</p>
-              <button type="submit" className="mt-3 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm font-medium shadow-sm">Mark as planned</button>
+              <p className="mt-1 text-sm text-[var(--muted)]">Uses Google&apos;s consent screen; no password is handled by Momentum.</p>
+              <button type="submit" className="mt-3 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm font-medium shadow-sm transition hover:-translate-y-0.5">Connect Google</button>
             </form>
-            <form action={saveMomentumIntegrationAction} className="rounded-lg border border-[var(--line)] bg-[var(--surface-soft)] p-3">
-              <input type="hidden" name="provider" value="outlook" />
-              <input type="hidden" name="label" value="Outlook / Microsoft 365" />
-              <input type="hidden" name="note" value="Needs Microsoft Graph OAuth credentials" />
+            <form action="/api/integrations/outlook/connect" method="get" className="rounded-lg border border-[var(--line)] bg-[var(--surface-soft)] p-3">
               <p className="font-medium">Outlook / Microsoft 365</p>
-              <p className="mt-1 text-sm text-[var(--muted)]">Reads events and deadline emails through Graph after OAuth.</p>
-              <button type="submit" className="mt-3 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm font-medium shadow-sm">Mark as planned</button>
+              <p className="mt-1 text-sm text-[var(--muted)]">Uses Microsoft sign-in and delegated Calendar.Read permission.</p>
+              <button type="submit" className="mt-3 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm font-medium shadow-sm transition hover:-translate-y-0.5">Connect Outlook</button>
             </form>
           </div>
         </Panel>
@@ -84,7 +66,7 @@ export default async function IntegrationsPage() {
 }
 
 function ConnectionHeader({ title, status, syncedAt }: { title: string; status: string; syncedAt?: Date | null }) {
-  const tone = status === "connected" ? "good" : status === "error" ? "warn" : status === "needs_oauth" ? "info" : "neutral";
+  const tone = status === "connected" ? "good" : status === "error" || status === "needs_setup" ? "warn" : status === "needs_oauth" ? "info" : "neutral";
   return (
     <div className="flex items-start justify-between gap-3">
       <div>
@@ -117,6 +99,7 @@ function oauthStatus(integrations: Map<string, { status: string }>) {
   const google = integrations.get("google_calendar")?.status;
   const outlook = integrations.get("outlook")?.status;
   if (google === "connected" || outlook === "connected") return "connected";
+  if (google === "needs_setup" || outlook === "needs_setup") return "needs_setup";
   if (google === "needs_oauth" || outlook === "needs_oauth") return "needs_oauth";
   return "not_connected";
 }

@@ -188,6 +188,7 @@ export async function saveMomentumIntegration(userAccountId: string, input: { pr
       status: input.status ?? "connected",
       configJson: writeJson(input.config ?? {}),
       lastError: input.lastError ?? null,
+      lastSyncedAt: input.status === "connected" || input.status === undefined ? new Date() : null,
     },
     update: {
       label: input.label || providerLabels[input.provider] || input.provider,
@@ -287,6 +288,88 @@ export async function syncGitHubActivity(userAccountId: string, input: { usernam
     return { evidenceCount, taskCount };
   } catch (error) {
     await saveMomentumIntegration(userAccountId, { provider: "github", config: { username: input.username ?? "" }, status: "error", lastError: error instanceof Error ? error.message : "GitHub sync failed" });
+    throw error;
+  }
+}
+
+export async function syncGoogleCalendarEvents(userAccountId: string, input: { accessToken: string }) {
+  await ensureDatabaseReady();
+  try {
+    const now = new Date();
+    const url = new URL("https://www.googleapis.com/calendar/v3/calendars/primary/events");
+    url.searchParams.set("timeMin", now.toISOString());
+    url.searchParams.set("timeMax", addDays(now, 21).toISOString());
+    url.searchParams.set("singleEvents", "true");
+    url.searchParams.set("orderBy", "startTime");
+    url.searchParams.set("maxResults", "50");
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${input.accessToken}` },
+    });
+    if (!response.ok) throw new Error(`Google Calendar returned ${response.status}`);
+    const payload = (await response.json()) as { items?: GoogleCalendarEvent[] };
+    let created = 0;
+    for (const event of payload.items ?? []) {
+      if (!event.id || !event.summary) continue;
+      const startsAt = parseDate(event.start?.dateTime ?? event.start?.date);
+      await upsertTask(userAccountId, {
+        source: "google_calendar",
+        externalId: event.id,
+        title: event.summary,
+        description: event.description || event.location || "Imported from Google Calendar.",
+        category: inferCalendarCategory(event.summary),
+        priority: startsAt && startsAt < addDays(new Date(), 3) ? "high" : "medium",
+        estimatedMinutes: 45,
+        dueAt: startsAt,
+        proofNote: "Calendar event attended, completed, or rescheduled intentionally.",
+        proofRequired: false,
+      });
+      created += 1;
+    }
+    await saveMomentumIntegration(userAccountId, { provider: "google_calendar", config: { authMode: "oauth" }, status: "connected", lastError: null });
+    return { created };
+  } catch (error) {
+    await saveMomentumIntegration(userAccountId, { provider: "google_calendar", config: { authMode: "oauth" }, status: "error", lastError: error instanceof Error ? error.message : "Google Calendar sync failed" });
+    throw error;
+  }
+}
+
+export async function syncMicrosoftCalendarEvents(userAccountId: string, input: { accessToken: string }) {
+  await ensureDatabaseReady();
+  try {
+    const now = new Date();
+    const url = new URL("https://graph.microsoft.com/v1.0/me/calendarView");
+    url.searchParams.set("startDateTime", now.toISOString());
+    url.searchParams.set("endDateTime", addDays(now, 21).toISOString());
+    url.searchParams.set("$top", "50");
+    url.searchParams.set("$orderby", "start/dateTime");
+    url.searchParams.set("$select", "id,subject,bodyPreview,start,end,location,webLink");
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${input.accessToken}` },
+    });
+    if (!response.ok) throw new Error(`Microsoft Graph returned ${response.status}`);
+    const payload = (await response.json()) as { value?: MicrosoftCalendarEvent[] };
+    let created = 0;
+    for (const event of payload.value ?? []) {
+      if (!event.id || !event.subject) continue;
+      const startsAt = parseDate(event.start?.dateTime);
+      await upsertTask(userAccountId, {
+        source: "outlook",
+        externalId: event.id,
+        title: event.subject,
+        description: event.bodyPreview || event.location?.displayName || "Imported from Outlook / Microsoft 365.",
+        category: inferCalendarCategory(event.subject),
+        priority: startsAt && startsAt < addDays(new Date(), 3) ? "high" : "medium",
+        estimatedMinutes: 45,
+        dueAt: startsAt,
+        proofNote: "Calendar event attended, completed, or rescheduled intentionally.",
+        proofRequired: false,
+      });
+      created += 1;
+    }
+    await saveMomentumIntegration(userAccountId, { provider: "outlook", config: { authMode: "oauth" }, status: "connected", lastError: null });
+    return { created };
+  } catch (error) {
+    await saveMomentumIntegration(userAccountId, { provider: "outlook", config: { authMode: "oauth" }, status: "error", lastError: error instanceof Error ? error.message : "Outlook sync failed" });
     throw error;
   }
 }
@@ -509,6 +592,12 @@ function defaultProofFor(category: string) {
   return "A screenshot, link, or short note showing it happened.";
 }
 
+function inferCalendarCategory(title: string) {
+  if (/\b(interview|apply|recruiter|career|internship|resume|handshake|simplify|linkedin)\b/i.test(title)) return "career";
+  if (/\b(class|lecture|lab|exam|quiz|homework|office hours|project|assignment|midterm|final)\b/i.test(title)) return "school";
+  return "personal";
+}
+
 function normalizeCanvasUrl(canvasUrl: string) {
   const trimmed = canvasUrl.trim().replace(/\/+$/, "");
   if (!/^https?:\/\//i.test(trimmed)) return `https://${trimmed}`;
@@ -559,4 +648,29 @@ type GitHubRepo = {
   pushed_at: string | null;
   language: string | null;
   fork: boolean;
+};
+
+type GoogleCalendarEvent = {
+  id?: string;
+  summary?: string;
+  description?: string;
+  location?: string;
+  start?: {
+    date?: string;
+    dateTime?: string;
+  };
+};
+
+type MicrosoftCalendarEvent = {
+  id?: string;
+  subject?: string;
+  bodyPreview?: string;
+  webLink?: string;
+  start?: {
+    dateTime?: string;
+    timeZone?: string;
+  };
+  location?: {
+    displayName?: string;
+  };
 };

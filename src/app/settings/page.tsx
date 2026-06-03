@@ -65,8 +65,9 @@ export default async function SettingsPage() {
         <Panel>
           <h2 className="text-lg font-semibold">Connector privacy</h2>
           <div className="mt-4 grid gap-3 text-sm text-stone-700">
-            <p>Canvas and GitHub tokens are used only during sync requests. They are not stored in the database.</p>
-            <p>Google Calendar and Outlook should use OAuth app credentials before live sync is enabled. Momentum will not ask for your account password.</p>
+            <p>Connections use provider sign-in and OAuth consent. Momentum never asks for your GitHub, Google, Microsoft, or Canvas password.</p>
+            <p>Provider access tokens are used during the sync callback and are not stored long-term by default. Reconnect when you want to refresh data.</p>
+            <p>GitHub, Google Calendar, Outlook, and Canvas require app owner OAuth credentials in Vercel before the connect buttons can complete.</p>
             <p>Simplify and Handshake are handled through paste/import workflows because that is safer and more reliable than scraping.</p>
             <p>Database: SQLite through `DATABASE_URL`; on Vercel fallback storage is `/tmp`, so use a managed database before depending on this for long-term production data.</p>
           </div>
