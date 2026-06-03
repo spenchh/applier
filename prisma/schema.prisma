@@ -1,0 +1,271 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model UserProfile {
+  id                  String    @id @default(cuid())
+  legalName           String
+  preferredName       String?
+  email               String
+  phone               String?
+  location            String?
+  school              String?
+  degree              String?
+  major               String?
+  minor               String?
+  graduationDate      DateTime?
+  gpa                 String?
+  workAuthorization   String?
+  sponsorshipRequired Boolean   @default(false)
+  earliestStartDate   DateTime?
+  preferredTerms      String    @default("[]")
+  preferredLocations  String    @default("[]")
+  remotePreference    String?
+  portfolioUrl        String?
+  githubUrl           String?
+  linkedinUrl         String?
+  websiteUrl          String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  applications Application[]
+  facts        ProfileFact[]
+  files        FileAsset[]
+  resumes      Resume[]
+}
+
+model ProfileFact {
+  id                 String    @id @default(cuid())
+  userProfileId      String
+  type               String
+  title              String
+  organization       String?
+  location           String?
+  startDate          DateTime?
+  endDate            DateTime?
+  description        String
+  impact             String?
+  skills             String    @default("[]")
+  evidenceNote       String?
+  resumeAllowed      Boolean   @default(true)
+  coverLetterAllowed Boolean   @default(true)
+  answersAllowed     Boolean   @default(true)
+  verified           Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  userProfile UserProfile @relation(fields: [userProfileId], references: [id], onDelete: Cascade)
+}
+
+model Resume {
+  id             String          @id @default(cuid())
+  userProfileId  String
+  name           String
+  baseType       String
+  rawText        String
+  structuredJson String?
+  isMaster       Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  userProfile UserProfile     @relation(fields: [userProfileId], references: [id], onDelete: Cascade)
+  versions    ResumeVersion[]
+}
+
+model ResumeVersion {
+  id                  String       @id @default(cuid())
+  resumeId            String
+  jobPostingId        String?
+  applicationId       String?
+  name                String
+  tailoredText        String
+  structuredJson      String?
+  htmlPreview         String?
+  pdfPath             String?
+  docxPath            String?
+  truthCheckJson      String?
+  keywordCoverageJson String?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  application Application? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  jobPosting  JobPosting?  @relation(fields: [jobPostingId], references: [id], onDelete: SetNull)
+  resume      Resume       @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+}
+
+model Company {
+  id        String       @id @default(cuid())
+  name      String
+  website   String?
+  domain    String?
+  industry  String?
+  size      String?
+  notes     String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  jobs JobPosting[]
+}
+
+model JobPosting {
+  id                      String          @id @default(cuid())
+  companyId               String
+  title                   String
+  location                String?
+  workplaceType           String?
+  internshipTerm          String?
+  sourceUrl               String?
+  sourceName              String?
+  atsProvider             String?
+  rawDescription          String
+  parsedJson              String?
+  requiredQualifications  String          @default("[]")
+  preferredQualifications String          @default("[]")
+  responsibilities        String          @default("[]")
+  technologies            String          @default("[]")
+  keywords                String          @default("[]")
+  compensation            String?
+  deadline                DateTime?
+  riskFlagsJson           String          @default("[]")
+  dedupeHash              String
+  importedAt              DateTime        @default(now())
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime        @updatedAt
+
+  applications   Application[]
+  company        Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  questions      JobQuestion[]
+  resumeVersions ResumeVersion[]
+}
+
+model JobQuestion {
+  id            String              @id @default(cuid())
+  jobPostingId  String
+  questionText  String
+  questionType  String              @default("text")
+  required      Boolean             @default(false)
+  optionsJson   String?
+  sensitive     Boolean             @default(false)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  answers    ApplicationAnswer[]
+  jobPosting JobPosting         @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+}
+
+model Application {
+  id              String    @id @default(cuid())
+  userProfileId   String
+  jobPostingId    String
+  status          String    @default("drafted")
+  applicationMode String    @default("manual")
+  fitScore        Int       @default(0)
+  fitAnalysisJson String?
+  approvedAt      DateTime?
+  submittedAt     DateTime?
+  source          String?
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  answers            ApplicationAnswer[]
+  coverLetters       CoverLetter[]
+  files              FileAsset[]
+  followUps          FollowUpTask[]
+  jobPosting         JobPosting          @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+  resumeVersions     ResumeVersion[]
+  submissionAttempts SubmissionAttempt[]
+  userProfile        UserProfile         @relation(fields: [userProfileId], references: [id], onDelete: Cascade)
+}
+
+model ApplicationAnswer {
+  id                   String       @id @default(cuid())
+  applicationId         String
+  jobQuestionId         String?
+  answerText            String
+  supportingFactIdsJson String       @default("[]")
+  truthCheckStatus      String       @default("needs_user_input")
+  userApproved          Boolean      @default(false)
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  jobQuestion JobQuestion? @relation(fields: [jobQuestionId], references: [id], onDelete: SetNull)
+}
+
+model CoverLetter {
+  id                   String      @id @default(cuid())
+  applicationId         String
+  text                 String
+  supportingFactIdsJson String      @default("[]")
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+}
+
+model FileAsset {
+  id            String   @id @default(cuid())
+  userProfileId String?
+  applicationId String?
+  type          String
+  filename      String
+  path          String
+  mimeType      String?
+  size          Int?
+  createdAt     DateTime @default(now())
+
+  application Application? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  userProfile UserProfile? @relation(fields: [userProfileId], references: [id], onDelete: SetNull)
+}
+
+model SubmissionAttempt {
+  id                  String      @id @default(cuid())
+  applicationId        String
+  adapter              String
+  status               String
+  requestSummaryJson   String?
+  responseSummaryJson  String?
+  errorMessage         String?
+  createdAt            DateTime    @default(now())
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  entityType   String
+  entityId     String
+  action       String
+  metadataJson String?
+  createdAt    DateTime @default(now())
+}
+
+model FollowUpTask {
+  id            String      @id @default(cuid())
+  applicationId String
+  title         String
+  dueDate       DateTime?
+  completed     Boolean     @default(false)
+  notes         String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+}
+
+model AppSettings {
+  id                        String   @id @default("singleton")
+  llmProvider               String   @default("mock")
+  defaultResumeTemplate     String   @default("software_engineering")
+  disableSubmissionAdapters Boolean  @default(false)
+  requireReview             Boolean  @default(true)
+  maxApplicationsPerDay     Int      @default(10)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+}
