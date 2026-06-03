@@ -1,6 +1,7 @@
 "use client";
 
-import { BriefcaseBusiness, ChevronDown, GraduationCap, Link as LinkIcon, MapPin, Sparkles, UserRound } from "lucide-react";
+import { BriefcaseBusiness, ChevronDown, GraduationCap, Link as LinkIcon, MapPin, UserRound } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { saveProfileAction } from "@/app/actions";
 import { SubmitButton } from "@/components/submit-button";
@@ -99,66 +100,77 @@ const locationSuggestions = [
 
 const termSuggestions = ["Summer", "Fall", "Spring", "Winter", "Academic year", "Part-time", "Full-time"];
 
+type PortfolioScan = {
+  url: string;
+  title?: string;
+  description?: string;
+  signals: string[];
+  gaps: string[];
+};
+
 export function ProfileForm({ defaults, showAssistant = false }: { defaults: ProfileFormValues; showAssistant?: boolean }) {
   const { control, register, setValue } = useForm<ProfileFormValues>({
     defaultValues: defaults,
   });
   const values = useWatch({ control }) as ProfileFormValues;
+  const [portfolioScan, setPortfolioScan] = useState<PortfolioScan | null>(null);
+  const [portfolioScanStatus, setPortfolioScanStatus] = useState<"idle" | "loading" | "error">("idle");
   const phoneRegistration = register("phone", {
     onChange: (event) => {
       setValue("phone", formatPhoneInput(event.target.value), { shouldDirty: true });
     },
   });
   const completion = calculateCompletion(values);
-  const schoolRecommendation = recommendSchoolLocation(values.school);
   const smartLocations = preferredLocationRecommendation(values.location, values.school);
   const internshipLanes = suggestInternshipLanes(values.careerInterests, values.major);
-  const tips = buildProfileTips(values);
+  const profileAudit = buildProfileAssetAudit(values);
+  const scannablePortfolioUrl = pickScannablePortfolioUrl(values);
+  const activePortfolioScan = portfolioScan?.url === scannablePortfolioUrl ? portfolioScan : null;
+  const activePortfolioScanStatus = scannablePortfolioUrl ? portfolioScanStatus : "idle";
 
-  function applyStarterRecommendations() {
-    if (!values.degree) setValue("degree", "Bachelor's degree", { shouldDirty: true });
-    if (!values.remotePreference) setValue("remotePreference", "hybrid", { shouldDirty: true });
-    if (!values.preferredTerms) setValue("preferredTerms", "Summer, Fall", { shouldDirty: true });
-    if (!values.preferredLocations) setValue("preferredLocations", smartLocations, { shouldDirty: true });
-    if (schoolRecommendation && !values.location) setValue("location", schoolRecommendation, { shouldDirty: true });
-  }
+  useEffect(() => {
+    if (!scannablePortfolioUrl) {
+      return;
+    }
 
-  function formatPhone() {
-    const formatted = formatUsPhone(values.phone);
-    if (formatted) setValue("phone", formatted, { shouldDirty: true });
-  }
+    const controller = new AbortController();
+    const timeout = window.setTimeout(async () => {
+      setPortfolioScanStatus("loading");
+      try {
+        const response = await fetch("/api/profile-link-audit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: scannablePortfolioUrl }),
+          signal: controller.signal,
+        });
+        if (!response.ok) throw new Error("Unable to scan portfolio");
+        const payload = (await response.json()) as PortfolioScan;
+        setPortfolioScan(payload);
+        setPortfolioScanStatus("idle");
+      } catch {
+        if (!controller.signal.aborted) {
+          setPortfolioScan(null);
+          setPortfolioScanStatus("error");
+        }
+      }
+    }, 700);
+
+    return () => {
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [scannablePortfolioUrl]);
 
   return (
     <form action={saveProfileAction} className="grid gap-6">
       {showAssistant ? (
-        <section className="grid gap-4 rounded-md bg-[#f5f7f1] p-4 lg:grid-cols-[1fr_1.1fr]">
-          <div>
-            <div className="flex items-center gap-2 text-sm font-semibold text-[#17473a]">
-              <Sparkles className="h-4 w-4" aria-hidden />
-              AI profile assist
-            </div>
-            <p className="mt-2 text-sm text-stone-700">
-              {completion}% complete. I can fill safe preference fields from your school, location, and internship goals.
-            </p>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-stone-200">
-              <div className="h-full rounded-full bg-[#17473a]" style={{ width: `${completion}%` }} />
-            </div>
+        <section className="grid gap-2">
+          <div className="flex items-center justify-between gap-3 text-sm">
+            <span className="font-semibold text-[#1d211f]">Profile completion</span>
+            <span className="font-medium text-[var(--muted)]">{completion}%</span>
           </div>
-          <div className="grid gap-3">
-            <div className="flex flex-wrap gap-2">
-              <AssistButton onClick={applyStarterRecommendations}>Apply starter recommendations</AssistButton>
-              {schoolRecommendation ? <AssistButton onClick={() => setValue("location", schoolRecommendation, { shouldDirty: true })}>Use school city</AssistButton> : null}
-              <AssistButton onClick={() => setValue("preferredTerms", appendCsvValue(values.preferredTerms, "Summer"), { shouldDirty: true })}>Add summer</AssistButton>
-              <AssistButton onClick={() => setValue("preferredLocations", smartLocations, { shouldDirty: true })}>Suggest locations</AssistButton>
-              {formatUsPhone(values.phone) ? <AssistButton onClick={formatPhone}>Format phone</AssistButton> : null}
-            </div>
-            <div className="grid gap-2 text-xs text-stone-600 sm:grid-cols-2">
-              {tips.map((tip) => (
-                <p key={tip} className="rounded-md bg-white/70 px-3 py-2">
-                  {tip}
-                </p>
-              ))}
-            </div>
+          <div className="h-2 overflow-hidden rounded-full bg-stone-200">
+            <div className="h-full rounded-full bg-[#17473a]" style={{ width: `${completion}%` }} />
           </div>
         </section>
       ) : null}
@@ -314,6 +326,7 @@ export function ProfileForm({ defaults, showAssistant = false }: { defaults: Pro
             <input className={inputClass} type="url" placeholder="https://..." {...register("websiteUrl")} />
           </label>
         </div>
+        <ProfileAssetAudit audit={profileAudit} portfolioScan={activePortfolioScan} portfolioScanStatus={activePortfolioScanStatus} />
       </FormSection>
 
       <label className="flex items-start gap-3 text-sm text-stone-700">
@@ -358,14 +371,6 @@ function FormSection({ icon, title, children }: { icon: React.ReactNode; title: 
       </h2>
       {children}
     </section>
-  );
-}
-
-function AssistButton({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
-  return (
-    <button type="button" onClick={onClick} className="rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-[#17473a] ring-1 ring-emerald-200 hover:bg-emerald-50">
-      {children}
-    </button>
   );
 }
 
@@ -440,16 +445,6 @@ function preferredLocationRecommendation(location?: string, school?: string) {
   return "Chicago, IL, New York, NY, Washington, DC, Remote";
 }
 
-function buildProfileTips(values: ProfileFormValues) {
-  const tips = [];
-  if (!values.legalName || values.legalName.trim().split(/\s+/).length < 2) tips.push("Use your full first and last legal name.");
-  if (/^united states$/i.test(values.location ?? "")) tips.push("A city and state works better than only country.");
-  if (!values.degree) tips.push("Pick a degree level so job filters can match internships correctly.");
-  if (!values.workAuthorization) tips.push("Leave work authorization blank until you can answer it accurately.");
-  if (!values.preferredLocations) tips.push("Add at least one city plus Remote if you are open to it.");
-  return tips.slice(0, 4);
-}
-
 function appendCsvValue(current: string | undefined, value: string) {
   const values = (current ?? "")
     .split(",")
@@ -459,17 +454,139 @@ function appendCsvValue(current: string | undefined, value: string) {
   return values.join(", ");
 }
 
-function formatUsPhone(phone?: string) {
-  const digits = (phone ?? "").replace(/\D/g, "");
-  if (digits.length !== 10) return "";
-  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
-}
-
 function formatPhoneInput(value: string) {
   const digits = value.replace(/\D/g, "").slice(0, 10);
   if (digits.length <= 3) return digits;
   if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
   return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+}
+
+type ProfileAssetAudit = {
+  score: number;
+  strengths: string[];
+  gaps: string[];
+  summary: string;
+  recruiterInquiry: string[];
+};
+
+function ProfileAssetAudit({ audit, portfolioScan, portfolioScanStatus }: { audit: ProfileAssetAudit; portfolioScan: PortfolioScan | null; portfolioScanStatus: "idle" | "loading" | "error" }) {
+  return (
+    <div className="grid gap-4 rounded-md border border-[var(--line)] bg-[#fbfbf8] p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-[#1d211f]">Profile asset audit</p>
+          <p className="mt-1 text-xs text-stone-600">Generated from your LinkedIn, GitHub, portfolio, and website links.</p>
+        </div>
+        <span className="rounded-md bg-white px-2 py-1 text-xs font-semibold text-[#17473a] ring-1 ring-emerald-200">{audit.score}% ready</span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-stone-200">
+        <div className="h-full rounded-full bg-[#17473a]" style={{ width: `${audit.score}%` }} />
+      </div>
+      <div className="grid gap-3 lg:grid-cols-2">
+        <AuditList title="Looks ready" items={audit.strengths} empty="Add professional links to start the audit." />
+        <AuditList title="Improve next" items={audit.gaps} empty="No major gaps detected from the links entered." />
+      </div>
+      <div className="rounded-md bg-white p-3 text-sm text-stone-700 ring-1 ring-stone-200">
+        <p className="font-semibold text-[#1d211f]">Generated recruiter summary</p>
+        <p className="mt-2">{audit.summary}</p>
+      </div>
+      <div className="rounded-md bg-white p-3 text-sm text-stone-700 ring-1 ring-stone-200">
+        <p className="font-semibold text-[#1d211f]">Portfolio website scan</p>
+        {portfolioScanStatus === "loading" ? <p className="mt-2 text-[var(--muted)]">Scanning public page metadata...</p> : null}
+        {portfolioScanStatus === "error" ? <p className="mt-2 text-amber-700">Could not scan that site automatically. The checklist below still applies.</p> : null}
+        {portfolioScan ? (
+          <div className="mt-2 grid gap-2">
+            <p>{portfolioScan.title || portfolioScan.url}</p>
+            {portfolioScan.description ? <p className="text-[var(--muted)]">{portfolioScan.description}</p> : null}
+            <AuditList title="Detected" items={portfolioScan.signals} empty="No common portfolio sections detected." />
+            <AuditList title="Missing from scan" items={portfolioScan.gaps} empty="No major gaps detected." />
+          </div>
+        ) : portfolioScanStatus === "idle" ? (
+          <p className="mt-2 text-[var(--muted)]">Add a portfolio or website URL to scan public page basics.</p>
+        ) : null}
+      </div>
+      <div className="rounded-md bg-white p-3 text-sm text-stone-700 ring-1 ring-stone-200">
+        <p className="font-semibold text-[#1d211f]">Recruiter contact form should ask for</p>
+        <ul className="mt-2 grid gap-1">
+          {audit.recruiterInquiry.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function AuditList({ title, items, empty }: { title: string; items: string[]; empty: string }) {
+  return (
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-stone-500">{title}</p>
+      <ul className="mt-2 grid gap-2 text-sm text-stone-700">
+        {items.length ? items.map((item) => <li key={item} className="rounded-md bg-white px-3 py-2 ring-1 ring-stone-200">{item}</li>) : <li className="text-[var(--muted)]">{empty}</li>}
+      </ul>
+    </div>
+  );
+}
+
+function buildProfileAssetAudit(values: ProfileFormValues): ProfileAssetAudit {
+  const strengths: string[] = [];
+  const gaps: string[] = [];
+  const hasLinkedIn = /linkedin\.com\/in\//i.test(values.linkedinUrl ?? "");
+  const hasGitHub = /github\.com\/[^/\s]+/i.test(values.githubUrl ?? "");
+  const hasPortfolio = isUrl(values.portfolioUrl) || isUrl(values.websiteUrl);
+
+  if (hasLinkedIn) strengths.push("LinkedIn profile URL is connected for recruiter verification.");
+  else gaps.push("Add a LinkedIn /in/ URL with headline, education, projects, and contact visibility.");
+
+  if (hasGitHub) strengths.push("GitHub profile is connected for code/project proof.");
+  else gaps.push("For computer engineering or tech roles, add GitHub with pinned, documented projects.");
+
+  if (hasPortfolio) strengths.push("Portfolio or personal website is connected for work samples.");
+  else gaps.push("Add a portfolio site with About, resume/CV, projects, contact, and scheduling links.");
+
+  if (values.careerInterests) strengths.push("Career interests are captured, so the app can suggest internship lanes.");
+  if (!values.portfolioUrl && values.githubUrl) gaps.push("Consider linking 2-3 GitHub projects from a portfolio page so recruiters see context, not just code.");
+  if (!values.websiteUrl && hasPortfolio) gaps.push("Use the website field for the main recruiter-facing URL if portfolio is your strongest asset.");
+
+  const score = Math.min(100, 25 + [hasLinkedIn, hasGitHub, hasPortfolio, Boolean(values.careerInterests)].filter(Boolean).length * 18);
+  const name = values.preferredName || values.legalName || "This candidate";
+  const focus = values.careerInterests || values.major || "internship opportunities";
+  const summary = `${name} is preparing for ${focus}. The strongest recruiter-facing profile should lead with a concise summary, resume/CV access, verified project samples, professional links, and a clear contact or scheduling path.`;
+
+  return {
+    score,
+    strengths,
+    gaps: gaps.slice(0, 5),
+    summary,
+    recruiterInquiry: ["Role or project type", "Preferred interview times", "Start date and internship term", "Location or remote expectations", "Best contact email"],
+  };
+}
+
+function isUrl(value?: string) {
+  if (!value) return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+function pickScannablePortfolioUrl(values: ProfileFormValues) {
+  const url = values.portfolioUrl || values.websiteUrl;
+  if (!isUrl(url)) return "";
+  const host = hostname(url);
+  if (/linkedin\.com|github\.com|indeed\.com|handshake\.com|joinhandshake\.com/i.test(host)) return "";
+  return url ?? "";
+}
+
+function hostname(value?: string) {
+  if (!value) return "";
+  try {
+    return new URL(value).hostname.toLowerCase();
+  } catch {
+    return "";
+  }
 }
 
 function suggestInternshipLanes(interests?: string, major?: string) {
