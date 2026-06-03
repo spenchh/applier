@@ -110,6 +110,7 @@ export async function getApplication(id: string, userAccountId: string) {
     where: { id, userProfile: { userAccountId } },
     include: {
       jobPosting: { include: { company: true, questions: true } },
+      userProfile: { include: { facts: true } },
       resumeVersions: true,
       coverLetters: true,
       answers: { include: { jobQuestion: true } },

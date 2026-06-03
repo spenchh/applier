@@ -4,7 +4,8 @@ import { CopyButton } from "@/components/copy-button";
 import { SubmitButton } from "@/components/submit-button";
 import { Badge, ButtonLink, PageHeader, Panel, Score } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
-import { readJson } from "@/lib/json";
+import { readJson, toList } from "@/lib/json";
+import { generatePortfolioPlanMock } from "@/lib/llm";
 import type { KeywordCoverage, TruthCheck } from "@/lib/schemas";
 import { getApplication } from "@/lib/services/application";
 
@@ -19,6 +20,12 @@ export default async function TailoringPage({ params }: { params: Promise<{ id: 
   const cover = application.coverLetters[0];
   const truth = readJson<TruthCheck>(resume?.truthCheckJson, { supportedClaims: [], weakClaims: [], unsupportedClaims: [], recommendedEdits: [] });
   const coverage = readJson<KeywordCoverage>(resume?.keywordCoverageJson, { requiredPresent: [], preferredPresent: [], missingKeywords: [], intentionallyOmitted: [] });
+  const portfolioPlan = generatePortfolioPlanMock({
+    company: application.jobPosting.company.name,
+    role: application.jobPosting.title,
+    facts: application.userProfile.facts,
+    keywords: toList(application.jobPosting.keywords),
+  });
 
   return (
     <>
@@ -48,6 +55,17 @@ export default async function TailoringPage({ params }: { params: Promise<{ id: 
               {cover ? <CopyButton value={cover.text} /> : null}
             </div>
             {cover ? <pre className="mt-4 whitespace-pre-wrap rounded-md bg-stone-50 p-4 text-sm leading-relaxed">{cover.text}</pre> : null}
+          </Panel>
+
+          <Panel>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold">Portfolio and CV strategy</h2>
+              <CopyButton value={[portfolioPlan.headline, "", "Projects", ...portfolioPlan.projects, "", "Proof points", ...portfolioPlan.proofPoints, "", "Gaps", ...portfolioPlan.gaps].join("\n")} />
+            </div>
+            <p className="mt-3 text-sm text-stone-700">{portfolioPlan.headline}</p>
+            <Bucket title="Portfolio projects to lead with" items={portfolioPlan.projects} tone="good" />
+            <Bucket title="Proof points to echo in CV/resume" items={portfolioPlan.proofPoints} tone="info" />
+            <Bucket title="Gaps to fill before applying" items={portfolioPlan.gaps} tone="warn" />
           </Panel>
 
           <Panel>

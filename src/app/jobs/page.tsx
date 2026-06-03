@@ -26,6 +26,10 @@ export default async function JobsPage() {
             <p>{targetRoles.length ? targetRoles.join(", ") : "Any role family"}</p>
             <p>{targetIndustries.length ? targetIndustries.join(", ") : "Any industry"}</p>
           </div>
+          <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
+            <p className="font-medium">Job-board inspired import</p>
+            <p>Paste descriptions or URLs from LinkedIn, Indeed, Handshake, school boards, and company career pages. Restricted boards stay Manual Mode, but InternPilot will still parse requirements and tailor your materials.</p>
+          </div>
           <form action={createJobAction} className="grid gap-4">
             <label className={labelClass}>
               Source URL
@@ -56,13 +60,18 @@ export default async function JobsPage() {
               </label>
               <label className={labelClass}>
                 Source name
-                <input name="sourceName" className={inputClass} placeholder="Greenhouse, campus board" />
+                <input name="sourceName" className={inputClass} list="job-source-options" placeholder="LinkedIn, Indeed, Handshake, Greenhouse" />
               </label>
             </div>
             <label className={labelClass}>
               Job description
               <textarea name="rawDescription" className={inputClass} rows={14} required />
             </label>
+            <datalist id="job-source-options">
+              {["LinkedIn", "Indeed", "Handshake", "Company careers page", "Greenhouse", "Lever", "Ashby", "SmartRecruiters", "School career center"].map((source) => (
+                <option key={source} value={source} />
+              ))}
+            </datalist>
             <SubmitButton>Parse job</SubmitButton>
           </form>
         </Panel>

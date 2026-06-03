@@ -27,6 +27,7 @@ async function initializeSqliteSchema() {
   }
 
   await ensureSqliteColumn("UserProfile", "userAccountId", "TEXT");
+  await ensureSqliteColumn("UserProfile", "careerInterests", "TEXT");
   await ensureSqliteColumn("JobPosting", "userAccountId", "TEXT");
 }
 

@@ -46,6 +46,7 @@ model UserProfile {
   graduationDate      DateTime?
   gpa                 String?
   workAuthorization   String?
+  careerInterests     String?
   sponsorshipRequired Boolean   @default(false)
   earliestStartDate   DateTime?
   preferredTerms      String    @default("[]")

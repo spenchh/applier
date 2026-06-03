@@ -149,6 +149,27 @@ export function generateCoverLetterMock(input: {
   };
 }
 
+export function generatePortfolioPlanMock(input: {
+  company: string;
+  role: string;
+  facts: FactLike[];
+  keywords: string[];
+}): { headline: string; projects: string[]; proofPoints: string[]; gaps: string[] } {
+  const allowedFacts = input.facts.filter((fact) => fact.resumeAllowed || fact.coverLetterAllowed);
+  const projects = allowedFacts.slice(0, 3).map((fact) => `${fact.title}: feature this as proof of ${safeSkillList(fact.skills).slice(0, 3).join(", ") || fact.type}.`);
+  const factText = allowedFacts.map((fact) => `${fact.title} ${fact.description} ${fact.impact ?? ""} ${safeSkillList(fact.skills).join(" ")}`).join(" ").toLowerCase();
+  const gaps = input.keywords.filter((keyword) => !factText.includes(keyword.toLowerCase())).slice(0, 5);
+  return {
+    headline: `Position your portfolio around ${input.company}'s ${input.role} requirements: show relevant proof first, then supporting work.`,
+    projects: projects.length ? projects : ["Add verified projects or work samples in the Truth Vault before linking a portfolio."],
+    proofPoints: allowedFacts
+      .slice(0, 4)
+      .map((fact) => `${fact.title}${fact.impact ? ` - ${fact.impact}` : ""}`)
+      .filter(Boolean),
+    gaps: gaps.length ? gaps.map((keyword) => `Add a project, writing sample, or fact that supports ${keyword}.`) : ["No major portfolio gaps were detected from stored facts."],
+  };
+}
+
 export function generateAnswerMock(question: string, facts: FactLike[]): {
   answerText: string;
   supportingFactIds: string[];

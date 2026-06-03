@@ -6,6 +6,7 @@ import { ensureDatabaseReady } from "./runtime-db";
 
 const SESSION_COOKIE = "internpilot_session";
 const SESSION_DAYS = 30;
+const REMEMBERED_SESSION_DAYS = 90;
 
 export type AuthUser = {
   id: string;
@@ -28,11 +29,11 @@ export async function signUp(input: { email: string; password: string; displayNa
       passwordSalt: salt,
     },
   });
-  await createSession(user.id);
+  await createSession(user.id, REMEMBERED_SESSION_DAYS);
   return user;
 }
 
-export async function signIn(input: { email: string; password: string }) {
+export async function signIn(input: { email: string; password: string; remember?: boolean }) {
   await ensureDatabaseReady();
   const email = normalizeEmail(input.email);
   const user = await prisma.userAccount.findUnique({ where: { email } });
@@ -41,7 +42,7 @@ export async function signIn(input: { email: string; password: string }) {
   const valid = await verifyPassword(input.password, user.passwordSalt, user.passwordHash);
   if (!valid) throw new Error("Invalid email or password.");
 
-  await createSession(user.id);
+  await createSession(user.id, input.remember ? REMEMBERED_SESSION_DAYS : SESSION_DAYS);
   return user;
 }
 
@@ -82,9 +83,9 @@ export async function requireUser(nextPath = "/"): Promise<AuthUser> {
   return user;
 }
 
-async function createSession(userAccountId: string) {
+async function createSession(userAccountId: string, sessionDays = SESSION_DAYS) {
   const token = crypto.randomBytes(32).toString("base64url");
-  const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
+  const expiresAt = new Date(Date.now() + sessionDays * 24 * 60 * 60 * 1000);
   await prisma.userSession.create({
     data: {
       userAccountId,

@@ -30,6 +30,7 @@ export async function ensureProfile(userAccountId: string, user?: { email: strin
       email: user?.email || "student@example.com",
       school: "Add your school",
       major: "Add your major",
+      careerInterests: "Add your internship interests",
     },
     include: {
       facts: true,
@@ -51,6 +52,7 @@ export async function upsertProfile(input: {
   graduationDate?: string;
   gpa?: string;
   workAuthorization?: string;
+  careerInterests?: string;
   sponsorshipRequired?: boolean;
   earliestStartDate?: string;
   preferredTerms?: string[];
@@ -77,6 +79,7 @@ export async function upsertProfile(input: {
     graduationDate: parseDate(input.graduationDate),
     gpa: input.gpa || null,
     workAuthorization: input.workAuthorization || null,
+    careerInterests: input.careerInterests || null,
     sponsorshipRequired: Boolean(input.sponsorshipRequired),
     earliestStartDate: parseDate(input.earliestStartDate),
     preferredTerms: writeJson(input.preferredTerms ?? []),

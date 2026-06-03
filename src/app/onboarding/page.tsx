@@ -27,6 +27,7 @@ export default async function OnboardingPage() {
             graduationDate: toDateInput(profile?.graduationDate),
             gpa: profile?.gpa ?? "",
             workAuthorization: profile?.workAuthorization ?? "",
+            careerInterests: profile?.careerInterests ?? "",
             sponsorshipRequired: profile?.sponsorshipRequired ?? false,
             earliestStartDate: toDateInput(profile?.earliestStartDate),
             preferredTerms: toList(profile?.preferredTerms).join(", "),

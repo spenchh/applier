@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS "UserProfile" (
     "graduationDate" DATETIME,
     "gpa" TEXT,
     "workAuthorization" TEXT,
+    "careerInterests" TEXT,
     "sponsorshipRequired" BOOLEAN NOT NULL DEFAULT false,
     "earliestStartDate" DATETIME,
     "preferredTerms" TEXT NOT NULL DEFAULT '[]',

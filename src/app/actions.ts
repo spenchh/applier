@@ -28,7 +28,7 @@ export async function signInAction(formData: FormData) {
   const email = formString(formData, "email");
   const password = formString(formData, "password");
   const next = formString(formData, "next") || "/";
-  await signIn({ email, password });
+  await signIn({ email, password, remember: true });
   redirect(next);
 }
 
@@ -52,6 +52,7 @@ export async function saveProfileAction(formData: FormData) {
     graduationDate: formString(formData, "graduationDate"),
     gpa: formString(formData, "gpa"),
     workAuthorization: formString(formData, "workAuthorization"),
+    careerInterests: formString(formData, "careerInterests"),
     sponsorshipRequired: formBool(formData, "sponsorshipRequired"),
     earliestStartDate: formString(formData, "earliestStartDate"),
     preferredTerms: fromCsv(formData.get("preferredTerms")),

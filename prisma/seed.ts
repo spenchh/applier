@@ -44,6 +44,7 @@ async function seedDemoData() {
     major: "Undeclared",
     graduationDate: "2027-05-15",
     workAuthorization: "Add your verified answer before applying",
+    careerInterests: "Community programs, operations, research, writing, communications, and project coordination",
     sponsorshipRequired: false,
     preferredTerms: ["summer"],
     preferredLocations: ["Chicago", "Remote"],

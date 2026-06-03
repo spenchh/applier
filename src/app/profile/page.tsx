@@ -34,6 +34,7 @@ export default async function ProfilePage() {
                 graduationDate: toDateInput(profile.graduationDate),
                 gpa: profile.gpa ?? "",
                 workAuthorization: profile.workAuthorization ?? "",
+                careerInterests: profile.careerInterests ?? "",
                 sponsorshipRequired: profile.sponsorshipRequired,
                 earliestStartDate: toDateInput(profile.earliestStartDate),
                 preferredTerms: toList(profile.preferredTerms).join(", "),

@@ -1,6 +1,6 @@
 "use client";
 
-import { GraduationCap, Link as LinkIcon, MapPin, Sparkles, UserRound } from "lucide-react";
+import { BriefcaseBusiness, ChevronDown, GraduationCap, Link as LinkIcon, MapPin, Sparkles, UserRound } from "lucide-react";
 import { useForm, useWatch } from "react-hook-form";
 import { saveProfileAction } from "@/app/actions";
 import { SubmitButton } from "@/components/submit-button";
@@ -19,6 +19,7 @@ type ProfileFormValues = {
   graduationDate?: string;
   gpa?: string;
   workAuthorization?: string;
+  careerInterests?: string;
   sponsorshipRequired?: boolean;
   earliestStartDate?: string;
   preferredTerms?: string;
@@ -103,9 +104,15 @@ export function ProfileForm({ defaults, showAssistant = false }: { defaults: Pro
     defaultValues: defaults,
   });
   const values = useWatch({ control }) as ProfileFormValues;
+  const phoneRegistration = register("phone", {
+    onChange: (event) => {
+      setValue("phone", formatPhoneInput(event.target.value), { shouldDirty: true });
+    },
+  });
   const completion = calculateCompletion(values);
   const schoolRecommendation = recommendSchoolLocation(values.school);
   const smartLocations = preferredLocationRecommendation(values.location, values.school);
+  const internshipLanes = suggestInternshipLanes(values.careerInterests, values.major);
   const tips = buildProfileTips(values);
 
   function applyStarterRecommendations() {
@@ -159,13 +166,13 @@ export function ProfileForm({ defaults, showAssistant = false }: { defaults: Pro
       <FormSection icon={<UserRound className="h-4 w-4" aria-hidden />} title="Identity">
         <div className="grid gap-4 md:grid-cols-2">
           <label className={labelClass}>
-            Full legal name
-            <input className={inputClass} placeholder="First Middle Last" autoComplete="name" {...register("legalName")} required />
-            <FieldHint>Use the name that should appear on applications and background forms.</FieldHint>
+            Legal first and last name
+            <input className={inputClass} placeholder="First Last" autoComplete="name" {...register("legalName")} required />
+            <FieldHint>Middle name is not needed for normal internship applications unless a company asks for it.</FieldHint>
           </label>
           <label className={labelClass}>
             Preferred or display name
-            <input className={inputClass} placeholder="What recruiters can call you" autoComplete="given-name" {...register("preferredName")} />
+            <input className={inputClass} placeholder="What recruiters can call you" autoComplete="given-name" {...register("preferredName")} required />
           </label>
           <label className={labelClass}>
             Email
@@ -173,22 +180,22 @@ export function ProfileForm({ defaults, showAssistant = false }: { defaults: Pro
           </label>
           <label className={labelClass}>
             Phone
-            <input className={inputClass} type="tel" inputMode="tel" autoComplete="tel" placeholder="(312) 555-0184" {...register("phone")} />
+            <input className={inputClass} type="tel" inputMode="tel" autoComplete="tel" placeholder="(312) 555-0184" {...phoneRegistration} required />
           </label>
           <label className={labelClass}>
             Current location
-            <input className={inputClass} list="profile-location-options" placeholder="City, state, or Remote" autoComplete="address-level2" {...register("location")} />
+            <input className={inputClass} list="profile-location-options" placeholder="City, state, or Remote" autoComplete="address-level2" {...register("location")} required />
           </label>
           <label className={labelClass}>
             Work authorization
-            <select className={inputClass} {...register("workAuthorization")}>
+            <SelectControl {...register("workAuthorization")} required>
               <option value="">Select verified status</option>
               {workAuthorizationOptions.map((option) => (
                 <option key={option} value={option}>
                   {option}
                 </option>
               ))}
-            </select>
+            </SelectControl>
             <FieldHint>Choose only what is accurate and verified.</FieldHint>
           </label>
         </div>
@@ -198,22 +205,22 @@ export function ProfileForm({ defaults, showAssistant = false }: { defaults: Pro
         <div className="grid gap-4 md:grid-cols-2">
           <label className={labelClass}>
             School
-            <input className={inputClass} list="profile-school-options" placeholder="Start typing your school" {...register("school")} />
+            <input className={inputClass} list="profile-school-options" placeholder="Start typing your school" {...register("school")} required />
           </label>
           <label className={labelClass}>
             Degree level
-            <select className={inputClass} {...register("degree")}>
+            <SelectControl {...register("degree")} required>
               <option value="">Select degree level</option>
               {degreeOptions.map((option) => (
                 <option key={option} value={option}>
                   {option}
                 </option>
               ))}
-            </select>
+            </SelectControl>
           </label>
           <label className={labelClass}>
             Major or concentration
-            <input className={inputClass} list="profile-major-options" placeholder="Start typing a major" {...register("major")} />
+            <input className={inputClass} list="profile-major-options" placeholder="Start typing a major" {...register("major")} required />
           </label>
           <label className={labelClass}>
             Minor
@@ -221,12 +228,41 @@ export function ProfileForm({ defaults, showAssistant = false }: { defaults: Pro
           </label>
           <label className={labelClass}>
             Graduation date
-            <input className={inputClass} type="date" {...register("graduationDate")} />
+            <input className={inputClass} type="date" {...register("graduationDate")} required />
           </label>
           <label className={labelClass}>
             GPA
-            <input className={inputClass} inputMode="decimal" placeholder="Optional, for example 3.7/4.0" {...register("gpa")} />
+            <input className={inputClass} inputMode="decimal" placeholder="For example 3.7/4.0" {...register("gpa")} required />
           </label>
+        </div>
+      </FormSection>
+
+      <FormSection icon={<BriefcaseBusiness className="h-4 w-4" aria-hidden />} title="Internship interests">
+        <label className={labelClass}>
+          What are you interested in?
+          <textarea
+            className={inputClass}
+            rows={4}
+            placeholder="Examples: sports marketing, finance, consulting, public policy, health care, music, fashion, data, design, startups"
+            {...register("careerInterests")}
+            required
+          />
+          <FieldHint>Use natural language. The explorer will translate this into internship lanes, search phrases, and application positioning.</FieldHint>
+        </label>
+        <div className="grid gap-3 md:grid-cols-3">
+          {internshipLanes.map((lane) => (
+            <div key={lane.title} className="rounded-md border border-[var(--line)] bg-[#fbfbf8] p-3">
+              <p className="text-sm font-semibold text-[#1d211f]">{lane.title}</p>
+              <p className="mt-1 text-xs text-stone-600">{lane.why}</p>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {lane.searches.map((search) => (
+                  <span key={search} className="rounded-md bg-white px-2 py-1 text-xs font-medium text-stone-700 ring-1 ring-stone-200">
+                    {search}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </FormSection>
 
@@ -234,25 +270,26 @@ export function ProfileForm({ defaults, showAssistant = false }: { defaults: Pro
         <div className="grid gap-4 md:grid-cols-2">
           <label className={labelClass}>
             Earliest start date
-            <input className={inputClass} type="date" {...register("earliestStartDate")} />
+            <input className={inputClass} type="date" {...register("earliestStartDate")} required />
           </label>
           <label className={labelClass}>
             Remote preference
-            <select className={inputClass} {...register("remotePreference")}>
-              <option value="">No preference</option>
+            <SelectControl {...register("remotePreference")} required>
+              <option value="">Select preference</option>
               <option value="remote">Remote</option>
               <option value="hybrid">Hybrid</option>
               <option value="onsite">Onsite</option>
-            </select>
+              <option value="no_preference">No preference</option>
+            </SelectControl>
           </label>
           <label className={labelClass}>
             Preferred terms
-            <input className={inputClass} list="profile-term-options" placeholder="Summer, Fall" {...register("preferredTerms")} />
+            <input className={inputClass} list="profile-term-options" placeholder="Summer, Fall" {...register("preferredTerms")} required />
             <SuggestionRow values={termSuggestions} onPick={(value) => setValue("preferredTerms", appendCsvValue(values.preferredTerms, value), { shouldDirty: true })} />
           </label>
           <label className={labelClass}>
             Preferred locations
-            <input className={inputClass} list="profile-location-options" placeholder="Chicago, IL, Remote" {...register("preferredLocations")} />
+            <input className={inputClass} list="profile-location-options" placeholder="Chicago, IL, Remote" {...register("preferredLocations")} required />
             <SuggestionRow values={smartLocations.split(", ").filter(Boolean).slice(0, 4)} onPick={(value) => setValue("preferredLocations", appendCsvValue(values.preferredLocations, value), { shouldDirty: true })} />
           </label>
         </div>
@@ -332,6 +369,20 @@ function AssistButton({ children, onClick }: { children: React.ReactNode; onClic
   );
 }
 
+function SelectControl({ children, ...props }: React.SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <span className="relative block">
+      <select
+        {...props}
+        className="w-full appearance-none rounded-md border border-[var(--line)] bg-white px-3 py-2 pr-10 text-sm outline-none ring-emerald-200 transition hover:border-stone-400 focus:border-emerald-600 focus:ring-4"
+      >
+        {children}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-500" aria-hidden />
+    </span>
+  );
+}
+
 function FieldHint({ children }: { children: React.ReactNode }) {
   return <span className="text-xs font-normal leading-5 text-[var(--muted)]">{children}</span>;
 }
@@ -361,6 +412,7 @@ function calculateCompletion(values: ProfileFormValues) {
     "major",
     "graduationDate",
     "workAuthorization",
+    "careerInterests",
     "preferredTerms",
     "preferredLocations",
     "remotePreference",
@@ -411,6 +463,80 @@ function formatUsPhone(phone?: string) {
   const digits = (phone ?? "").replace(/\D/g, "");
   if (digits.length !== 10) return "";
   return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+}
+
+function formatPhoneInput(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 10);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+}
+
+function suggestInternshipLanes(interests?: string, major?: string) {
+  const text = `${interests ?? ""} ${major ?? ""}`.toLowerCase();
+  const lanes = [
+    {
+      match: /sport|team|athletic|media|entertainment/,
+      title: "Sports, media, and entertainment",
+      why: "Good for marketing, partnerships, operations, analytics, production, and fan engagement internships.",
+      searches: ["sports marketing intern", "partnerships intern", "fan experience intern"],
+    },
+    {
+      match: /finance|bank|invest|market|account|economic/,
+      title: "Finance and business analysis",
+      why: "Targets analyst, corporate finance, strategy, accounting, and market research internships.",
+      searches: ["finance intern", "business analyst intern", "market research intern"],
+    },
+    {
+      match: /policy|government|law|legal|nonprofit|public/,
+      title: "Policy, legal, and public impact",
+      why: "Fits research, legislative, advocacy, compliance, nonprofit, and civic program internships.",
+      searches: ["policy intern", "legal intern", "public affairs intern"],
+    },
+    {
+      match: /design|creative|figma|ux|ui|fashion|brand/,
+      title: "Design, UX, and brand",
+      why: "Highlights design thinking, research, portfolio work, brand systems, and user-facing projects.",
+      searches: ["UX intern", "brand strategy intern", "creative intern"],
+    },
+    {
+      match: /data|tech|software|computer|engineer|ai|analytics/,
+      title: "Technology and data",
+      why: "Covers software, data analytics, AI operations, product, and technical business roles.",
+      searches: ["data analyst intern", "software intern", "AI operations intern"],
+    },
+    {
+      match: /health|medicine|bio|clinic|psych|care/,
+      title: "Health, research, and life sciences",
+      why: "Useful for clinical research, public health, lab operations, health tech, and patient experience roles.",
+      searches: ["public health intern", "clinical research intern", "healthcare operations intern"],
+    },
+    {
+      match: /write|journal|communicat|social|marketing|music|content/,
+      title: "Communications and marketing",
+      why: "Turns writing, content, campaigns, social media, and storytelling into internship search lanes.",
+      searches: ["communications intern", "content marketing intern", "social media intern"],
+    },
+  ];
+  const matches = lanes.filter((lane) => lane.match.test(text));
+  const fallback = [
+    {
+      title: "General business and operations",
+      why: "A flexible starting point for students still exploring role fit across industries.",
+      searches: ["operations intern", "project coordinator intern", "business intern"],
+    },
+    {
+      title: "Research and strategy",
+      why: "Good when your interests are broad and you want roles that use writing, analysis, and synthesis.",
+      searches: ["research intern", "strategy intern", "program intern"],
+    },
+    {
+      title: "Marketing and communications",
+      why: "A strong non-technical lane for students who like storytelling, brands, events, or people-facing work.",
+      searches: ["marketing intern", "communications intern", "community intern"],
+    },
+  ];
+  return (matches.length ? matches : fallback).slice(0, 3);
 }
 
 function unique(value: string, index: number, values: string[]) {
