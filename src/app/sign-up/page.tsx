@@ -14,10 +14,10 @@ export default async function SignUpPage({ searchParams }: { searchParams: Promi
 
   return (
     <div className="mx-auto max-w-xl">
-      <PageHeader title="Create account" eyebrow="Save your application workspace" />
+      <PageHeader title="Create account" eyebrow="Save your accountability workspace" />
       <Panel>
         <form action={signUpAction} className="grid gap-4">
-          <input type="hidden" name="next" value={next || "/onboarding"} />
+          <input type="hidden" name="next" value={next || "/"} />
           <label className={labelClass}>
             Name
             <input name="displayName" className={inputClass} autoComplete="name" />

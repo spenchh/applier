@@ -8,7 +8,7 @@ export function DeleteDataForm() {
     <form
       action={deleteAllDataAction}
       onSubmit={(event) => {
-        if (!window.confirm("Delete all local InternPilot app data? This cannot be undone.")) {
+        if (!window.confirm("Delete all Momentum app data? This cannot be undone.")) {
           event.preventDefault();
         }
       }}

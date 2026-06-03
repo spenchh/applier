@@ -6,12 +6,14 @@ import { requireUser, signIn, signOut, signUp } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { formBool, formString, fromCsv } from "@/lib/json";
 import { ensureDatabaseReady } from "@/lib/runtime-db";
-import { jobInputSchema, profileFactSchema, profileSchema, resumeSchema } from "@/lib/schemas";
+import { jobInputSchema, momentumCheckInSchema, momentumEvidenceSchema, momentumGoalSchema, momentumTaskSchema, profileFactSchema, profileSchema, resumeSchema } from "@/lib/schemas";
 import { approveApplication, markSubmitted, updateApplicationStatus } from "@/lib/services/application";
 import { normalizeDiscoveryQuery, saveDiscoverySearch, saveSourcedJobToInbox } from "@/lib/services/discovery";
 import { createJobFromInput } from "@/lib/services/job";
+import { completeMomentumTask, createMomentumCheckIn, createMomentumEvidence, createMomentumGoal, createMomentumTask, importMomentumText, saveMomentumIntegration, syncCanvasAssignments, syncGitHubActivity } from "@/lib/services/momentum";
 import { createProfileFact, ensureProfile, upsertProfile } from "@/lib/services/profile";
 import { createResume } from "@/lib/services/resume";
+import { parseDate } from "@/lib/services/shared";
 import { updateSettings } from "@/lib/services/settings";
 import { generateApplicationPacket } from "@/lib/services/tailoring";
 
@@ -183,6 +185,137 @@ export async function updateStatusAction(applicationId: string, status: string) 
   revalidatePath("/applications/review");
 }
 
+export async function createMomentumGoalAction(formData: FormData) {
+  const user = await requireUser("/goals");
+  const parsed = momentumGoalSchema.parse({
+    title: formString(formData, "title"),
+    category: formString(formData, "category") || "school",
+    why: formString(formData, "why"),
+    successMetric: formString(formData, "successMetric"),
+    targetDate: formString(formData, "targetDate"),
+    cadence: formString(formData, "cadence") || "weekly",
+  });
+  await createMomentumGoal(user.id, parsed);
+  revalidatePath("/");
+  revalidatePath("/goals");
+}
+
+export async function createMomentumTaskAction(formData: FormData) {
+  const user = await requireUser("/plan");
+  const parsed = momentumTaskSchema.parse({
+    goalId: formString(formData, "goalId"),
+    title: formString(formData, "title"),
+    description: formString(formData, "description"),
+    category: formString(formData, "category") || "school",
+    priority: formString(formData, "priority") || "medium",
+    estimatedMinutes: formString(formData, "estimatedMinutes") || "45",
+    dueAt: formString(formData, "dueAt"),
+    proofRequired: formBool(formData, "proofRequired"),
+    proofNote: formString(formData, "proofNote"),
+  });
+  await createMomentumTask(user.id, {
+    ...parsed,
+    dueAt: parseDate(parsed.dueAt),
+  });
+  revalidatePath("/");
+  revalidatePath("/plan");
+}
+
+export async function completeMomentumTaskAction(formData: FormData) {
+  const user = await requireUser("/plan");
+  const taskId = formString(formData, "taskId");
+  const proofNote = formString(formData, "proofNote");
+  const returnTo = formString(formData, "returnTo") || "/plan";
+  await completeMomentumTask(user.id, taskId, proofNote);
+  revalidatePath("/");
+  revalidatePath("/plan");
+  revalidatePath("/evidence");
+  redirect(returnTo);
+}
+
+export async function createMomentumEvidenceAction(formData: FormData) {
+  const user = await requireUser("/evidence");
+  const parsed = momentumEvidenceSchema.parse({
+    taskId: formString(formData, "taskId"),
+    source: formString(formData, "source") || "manual",
+    title: formString(formData, "title"),
+    url: formString(formData, "url"),
+    summary: formString(formData, "summary"),
+    skills: fromCsv(formData.get("skills")),
+  });
+  await createMomentumEvidence(user.id, parsed);
+  revalidatePath("/");
+  revalidatePath("/evidence");
+}
+
+export async function createMomentumCheckInAction(formData: FormData) {
+  const user = await requireUser("/coach");
+  const parsed = momentumCheckInSchema.parse({
+    mood: formString(formData, "mood"),
+    availableMinutes: formString(formData, "availableMinutes") || "120",
+    focus: formString(formData, "focus"),
+    blockers: formString(formData, "blockers"),
+  });
+  await createMomentumCheckIn(user.id, parsed);
+  revalidatePath("/");
+  revalidatePath("/coach");
+  revalidatePath("/plan");
+}
+
+export async function syncCanvasAction(formData: FormData) {
+  const user = await requireUser("/integrations");
+  try {
+    await syncCanvasAssignments(user.id, {
+      canvasUrl: formString(formData, "canvasUrl"),
+      accessToken: formString(formData, "accessToken"),
+    });
+  } catch {
+    // The service records connector status/error; keep the user on the page.
+  }
+  revalidatePath("/");
+  revalidatePath("/integrations");
+  revalidatePath("/plan");
+}
+
+export async function syncGitHubAction(formData: FormData) {
+  const user = await requireUser("/integrations");
+  try {
+    await syncGitHubActivity(user.id, {
+      username: formString(formData, "username"),
+      accessToken: formString(formData, "accessToken"),
+    });
+  } catch {
+    // The service records connector status/error; keep the user on the page.
+  }
+  revalidatePath("/");
+  revalidatePath("/integrations");
+  revalidatePath("/evidence");
+  revalidatePath("/plan");
+}
+
+export async function importMomentumTextAction(formData: FormData) {
+  const user = await requireUser("/integrations");
+  await importMomentumText(user.id, {
+    source: formString(formData, "source") || "syllabus",
+    text: formString(formData, "text"),
+  });
+  revalidatePath("/");
+  revalidatePath("/integrations");
+  revalidatePath("/plan");
+}
+
+export async function saveMomentumIntegrationAction(formData: FormData) {
+  const user = await requireUser("/integrations");
+  const provider = formString(formData, "provider");
+  await saveMomentumIntegration(user.id, {
+    provider,
+    label: formString(formData, "label"),
+    config: { note: formString(formData, "note") },
+    status: "needs_oauth",
+  });
+  revalidatePath("/integrations");
+}
+
 export async function updateSettingsAction(formData: FormData) {
   await requireUser("/settings");
   await updateSettings({
@@ -203,6 +336,11 @@ export async function deleteAllDataAction(_formData: FormData) {
   void _formData;
   const user = await requireUser("/settings");
   await ensureDatabaseReady();
+  await prisma.momentumCheckIn.deleteMany({ where: { userAccountId: user.id } });
+  await prisma.momentumEvidence.deleteMany({ where: { userAccountId: user.id } });
+  await prisma.momentumTask.deleteMany({ where: { userAccountId: user.id } });
+  await prisma.momentumGoal.deleteMany({ where: { userAccountId: user.id } });
+  await prisma.momentumIntegration.deleteMany({ where: { userAccountId: user.id } });
   await prisma.userProfile.deleteMany({ where: { userAccountId: user.id } });
   await prisma.jobPosting.deleteMany({ where: { userAccountId: user.id } });
   await prisma.auditLog.deleteMany({ where: { entityId: user.id } });

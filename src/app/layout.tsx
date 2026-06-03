@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "InternPilot",
-  description: "Human-reviewed internship application command center",
+  title: "Momentum",
+  description: "AI accountability coach for school, career, and daily execution",
 };
 
 export default function RootLayout({

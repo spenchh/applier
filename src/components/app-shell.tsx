@@ -1,18 +1,15 @@
-import { BarChart3, BriefcaseBusiness, ClipboardCheck, FileText, Home, Inbox, LogIn, LogOut, Search, Settings, ShieldCheck, UserRound } from "lucide-react";
+import { Bot, CalendarCheck, Gauge, LibraryBig, LogIn, LogOut, PlugZap, Settings, Target, Zap } from "lucide-react";
 import Link from "next/link";
 import { signOutAction } from "@/app/actions";
 import { currentUser } from "@/lib/auth";
 
 const nav = [
-  { href: "/", label: "Dashboard", icon: Home },
-  { href: "/onboarding", label: "Onboarding", icon: ShieldCheck },
-  { href: "/profile", label: "Truth Vault", icon: UserRound },
-  { href: "/resumes", label: "Resumes", icon: FileText },
-  { href: "/discover", label: "Discover", icon: Search },
-  { href: "/jobs", label: "Job Inbox", icon: Inbox },
-  { href: "/applications/review", label: "Review Queue", icon: ClipboardCheck },
-  { href: "/tracker", label: "Tracker", icon: BriefcaseBusiness },
-  { href: "/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/", label: "Command Center", icon: Gauge },
+  { href: "/plan", label: "Today Plan", icon: CalendarCheck },
+  { href: "/goals", label: "Goals", icon: Target },
+  { href: "/evidence", label: "Proof Library", icon: LibraryBig },
+  { href: "/integrations", label: "Connections", icon: PlugZap },
+  { href: "/coach", label: "AI Coach", icon: Bot },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -22,8 +19,10 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
     <div className="app-shell min-h-screen bg-[var(--background)]">
       <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-[var(--line)] bg-[var(--surface-soft)] px-4 py-5 lg:block">
         <Link href="/" className="flex items-center gap-2 px-2 text-xl font-semibold text-[var(--foreground)]">
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-[var(--brand)] text-white shadow-sm">IP</span>
-          InternPilot
+          <span className="grid h-9 w-9 place-items-center rounded-lg bg-[var(--brand)] text-white shadow-sm">
+            <Zap className="h-5 w-5" aria-hidden />
+          </span>
+          Momentum
         </Link>
         <nav className="mt-8 grid gap-1.5">
           {nav.map((item) => {
@@ -62,7 +61,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         <header className="sticky top-0 z-10 border-b border-[var(--line)] bg-[var(--surface-soft)]/95 px-4 py-3 backdrop-blur lg:hidden">
           <div className="flex items-center justify-between gap-3">
             <Link href="/" className="font-semibold">
-              InternPilot
+              Momentum
             </Link>
             {user ? (
               <form action={signOutAction}>

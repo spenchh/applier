@@ -13,7 +13,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
 
   return (
     <div className="mx-auto max-w-xl">
-      <PageHeader title="Sign in" eyebrow="InternPilot account" />
+      <PageHeader title="Sign in" eyebrow="Momentum account" />
       <Panel>
         <SignInForm next={next || "/"} />
         <p className="mt-4 text-sm text-[var(--muted)]">

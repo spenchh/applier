@@ -1,12 +1,11 @@
+import Link from "next/link";
 import { updateSettingsAction } from "@/app/actions";
 import { DeleteDataForm } from "@/components/delete-data-form";
 import { SubmitButton } from "@/components/submit-button";
-import { ButtonLink, PageHeader, Panel, inputClass, labelClass } from "@/components/ui";
+import { PageHeader, Panel, inputClass, labelClass } from "@/components/ui";
 import { getAIWrapperStatus, safeProviderName } from "@/lib/ai-wrapper";
 import { requireUser } from "@/lib/auth";
-import { toList } from "@/lib/json";
 import { getSettings } from "@/lib/services/settings";
-import { roleCategories, roleCategoryLabel } from "@/lib/text";
 
 export const dynamic = "force-dynamic";
 
@@ -18,23 +17,24 @@ export default async function SettingsPage() {
     model: settings.aiModel,
     instructions: settings.aiInstructions,
   });
+
   return (
     <>
-      <PageHeader title="Settings" eyebrow="Provider and privacy controls" action={<ButtonLink href="/api/export/data.json" tone="secondary">Export data</ButtonLink>} />
+      <PageHeader title="Settings" eyebrow="Coach, privacy, and data" />
       <div className="grid gap-6 xl:grid-cols-2">
         <Panel>
-          <h2 className="mb-4 text-lg font-semibold">AI wrapper</h2>
-          <div className="mb-4 rounded-lg border border-[var(--line)] bg-[var(--surface-soft)] p-3 text-sm text-stone-700">
-            <p className="font-medium">Current mode: {aiStatus.mode === "local_mock" ? "Local mock" : aiStatus.effectiveProvider}</p>
-            <p>Selected provider: {aiStatus.provider}</p>
+          <h2 className="text-lg font-semibold">AI coach</h2>
+          <div className="mt-4 rounded-lg border border-[var(--line)] bg-[var(--surface-soft)] p-3 text-sm text-stone-700">
+            <p className="font-medium">Current mode: {aiStatus.mode === "local_mock" ? "Local planning engine" : aiStatus.effectiveProvider}</p>
+            <p>Provider: {aiStatus.provider}</p>
             <p>Model: {aiStatus.model}</p>
             {aiStatus.warning ? <p className="mt-2 text-amber-700">{aiStatus.warning}</p> : null}
           </div>
-          <form action={updateSettingsAction} className="grid gap-4">
+          <form action={updateSettingsAction} className="mt-4 grid gap-4">
             <label className={labelClass}>
               LLM provider
               <select name="llmProvider" className={inputClass} defaultValue={settings.llmProvider}>
-                <option value="mock">Mock</option>
+                <option value="mock">Local mock</option>
                 <option value="anthropic">Anthropic</option>
                 <option value="openai">OpenAI</option>
               </select>
@@ -44,74 +44,45 @@ export default async function SettingsPage() {
               <input name="aiModel" className={inputClass} defaultValue={settings.aiModel ?? ""} placeholder="mock, gpt-4.1, claude-sonnet..." />
             </label>
             <label className={labelClass}>
-              AI instructions
+              Coach instructions
               <textarea
                 name="aiInstructions"
                 className={inputClass}
-                rows={4}
+                rows={5}
                 defaultValue={settings.aiInstructions ?? ""}
-                placeholder="Optional tone or formatting preferences. Truth Vault facts remain the only allowed source for claims."
+                placeholder="Example: Be direct, keep plans realistic, bias toward school deadlines before career tasks during exam weeks."
               />
             </label>
-            <label className={labelClass}>
-              Default resume template
-              <select name="defaultResumeTemplate" className={inputClass} defaultValue={settings.defaultResumeTemplate}>
-                <option value="software_engineering">Software engineering</option>
-                <option value="data_science">Data science</option>
-                <option value="product_management">Product management</option>
-                <option value="design_ux">Design / UX</option>
-                <option value="marketing">Marketing</option>
-                <option value="finance">Finance</option>
-                <option value="consulting">Consulting</option>
-                <option value="research">Research</option>
-                <option value="operations">Operations</option>
-                <option value="general_internship">General internship</option>
-              </select>
-            </label>
-            <label className={labelClass}>
-              Target role families
-              <input
-                name="targetRoleTypes"
-                className={inputClass}
-                defaultValue={toList(settings.targetRoleTypes).join(", ")}
-                placeholder={roleCategories.map(roleCategoryLabel).slice(0, 5).join(", ")}
-              />
-            </label>
-            <label className={labelClass}>
-              Target industries
-              <input name="targetIndustries" className={inputClass} defaultValue={toList(settings.targetIndustries).join(", ")} placeholder="Healthcare, climate, media, finance" />
-            </label>
-            <label className={labelClass}>
-              Excluded keywords
-              <input name="excludedKeywords" className={inputClass} defaultValue={toList(settings.excludedKeywords).join(", ")} placeholder="unpaid, door-to-door, commission-only" />
-            </label>
-            <label className={labelClass}>
-              Max applications per day
-              <input name="maxApplicationsPerDay" className={inputClass} type="number" min={1} max={50} defaultValue={settings.maxApplicationsPerDay} />
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input name="disableSubmissionAdapters" type="checkbox" defaultChecked={settings.disableSubmissionAdapters} />
-              Disable all submission adapters
-            </label>
-            <label className="flex items-center gap-2 text-sm text-stone-600">
-              <input type="checkbox" checked readOnly />
-              Require review before submission
-            </label>
-            <SubmitButton>Save settings</SubmitButton>
+            <input type="hidden" name="defaultResumeTemplate" value={settings.defaultResumeTemplate} />
+            <input type="hidden" name="targetRoleTypes" value="" />
+            <input type="hidden" name="targetIndustries" value="" />
+            <input type="hidden" name="excludedKeywords" value="" />
+            <input type="hidden" name="maxApplicationsPerDay" value={settings.maxApplicationsPerDay} />
+            <SubmitButton>Save coach settings</SubmitButton>
           </form>
         </Panel>
 
         <Panel>
-          <h2 className="mb-4 text-lg font-semibold">Data controls</h2>
-          <div className="grid gap-3 text-sm text-stone-700">
-            <p>Local database: SQLite via `DATABASE_URL`.</p>
-            <p>Generated files: local `/storage` directory when export integrations are added.</p>
-            <p>Secrets: environment variables only.</p>
-            <p>Seed data is blank by default. Optional demo data requires `SEED_DEMO=true npm run db:seed`.</p>
+          <h2 className="text-lg font-semibold">Connector privacy</h2>
+          <div className="mt-4 grid gap-3 text-sm text-stone-700">
+            <p>Canvas and GitHub tokens are used only during sync requests. They are not stored in the database.</p>
+            <p>Google Calendar and Outlook should use OAuth app credentials before live sync is enabled. Momentum will not ask for your account password.</p>
+            <p>Simplify and Handshake are handled through paste/import workflows because that is safer and more reliable than scraping.</p>
+            <p>Database: SQLite through `DATABASE_URL`; on Vercel fallback storage is `/tmp`, so use a managed database before depending on this for long-term production data.</p>
           </div>
           <div className="mt-5">
             <DeleteDataForm />
           </div>
+        </Panel>
+
+        <Panel className="xl:col-span-2">
+          <h2 className="text-lg font-semibold">Legacy application tools</h2>
+          <p className="mt-2 text-sm text-stone-700">
+            InternPilot pages are no longer the main product, but they are still available by URL while we transition:{" "}
+            <Link className="font-medium text-emerald-700" href="/jobs">Job Inbox</Link>,{" "}
+            <Link className="font-medium text-emerald-700" href="/resumes">Resumes</Link>,{" "}
+            <Link className="font-medium text-emerald-700" href="/applications/review">Review Queue</Link>.
+          </p>
         </Panel>
       </div>
     </>

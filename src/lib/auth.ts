@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "./db";
 import { ensureDatabaseReady } from "./runtime-db";
 
-const SESSION_COOKIE = "internpilot_session";
+const SESSION_COOKIE = "momentum_session";
 const SESSION_DAYS = 30;
 const REMEMBERED_SESSION_DAYS = 90;
 

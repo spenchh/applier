@@ -1,7 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 
 if (!process.env.DATABASE_URL && process.env.VERCEL) {
-  process.env.DATABASE_URL = "file:/tmp/internpilot.db";
+  process.env.DATABASE_URL = "file:/tmp/momentum.db";
 }
 
 const globalForPrisma = globalThis as unknown as {

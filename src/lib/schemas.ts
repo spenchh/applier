@@ -146,3 +146,46 @@ export type KeywordCoverage = {
   missingKeywords: string[];
   intentionallyOmitted: string[];
 };
+
+export const momentumGoalSchema = z.object({
+  title: z.string().min(3),
+  category: z.string().min(1).default("school"),
+  why: z.string().optional(),
+  successMetric: z.string().optional(),
+  targetDate: z.string().optional(),
+  cadence: z.string().min(1).default("weekly"),
+});
+
+export const momentumTaskSchema = z.object({
+  goalId: z.string().optional(),
+  title: z.string().min(3),
+  description: z.string().optional(),
+  category: z.string().min(1).default("school"),
+  priority: z.string().min(1).default("medium"),
+  estimatedMinutes: z.coerce.number().min(5).max(480).default(45),
+  dueAt: z.string().optional(),
+  proofRequired: z.boolean().default(true),
+  proofNote: z.string().optional(),
+});
+
+export const momentumEvidenceSchema = z.object({
+  taskId: z.string().optional(),
+  source: z.string().min(1).default("manual"),
+  title: z.string().min(3),
+  url: z.string().url().optional().or(z.literal("")),
+  summary: z.string().min(5),
+  skills: z.array(z.string()).default([]),
+});
+
+export const momentumCheckInSchema = z.object({
+  mood: z.string().optional(),
+  availableMinutes: z.coerce.number().min(15).max(720).default(120),
+  focus: z.string().optional(),
+  blockers: z.string().optional(),
+});
+
+export const momentumIntegrationSchema = z.object({
+  provider: z.string().min(1),
+  label: z.string().min(1),
+  config: z.record(z.string(), z.string()).default({}),
+});

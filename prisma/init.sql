@@ -321,6 +321,99 @@ CREATE TABLE IF NOT EXISTS "FollowUpTask" (
     CONSTRAINT "FollowUpTask_applicationId_fkey" FOREIGN KEY ("applicationId") REFERENCES "Application" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS "MomentumGoal" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "userAccountId" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "category" TEXT NOT NULL DEFAULT 'school',
+    "why" TEXT,
+    "successMetric" TEXT,
+    "targetDate" DATETIME,
+    "cadence" TEXT NOT NULL DEFAULT 'weekly',
+    "status" TEXT NOT NULL DEFAULT 'active',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "MomentumGoal_userAccountId_fkey" FOREIGN KEY ("userAccountId") REFERENCES "UserAccount" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS "MomentumGoal_userAccountId_status_idx" ON "MomentumGoal"("userAccountId", "status");
+CREATE INDEX IF NOT EXISTS "MomentumGoal_targetDate_idx" ON "MomentumGoal"("targetDate");
+
+CREATE TABLE IF NOT EXISTS "MomentumTask" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "userAccountId" TEXT NOT NULL,
+    "goalId" TEXT,
+    "source" TEXT NOT NULL DEFAULT 'manual',
+    "externalId" TEXT,
+    "title" TEXT NOT NULL,
+    "description" TEXT,
+    "category" TEXT NOT NULL DEFAULT 'school',
+    "priority" TEXT NOT NULL DEFAULT 'medium',
+    "estimatedMinutes" INTEGER NOT NULL DEFAULT 45,
+    "dueAt" DATETIME,
+    "status" TEXT NOT NULL DEFAULT 'todo',
+    "proofRequired" BOOLEAN NOT NULL DEFAULT true,
+    "proofNote" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    "completedAt" DATETIME,
+    CONSTRAINT "MomentumTask_goalId_fkey" FOREIGN KEY ("goalId") REFERENCES "MomentumGoal" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "MomentumTask_userAccountId_fkey" FOREIGN KEY ("userAccountId") REFERENCES "UserAccount" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS "MomentumTask_userAccountId_status_idx" ON "MomentumTask"("userAccountId", "status");
+CREATE INDEX IF NOT EXISTS "MomentumTask_dueAt_idx" ON "MomentumTask"("dueAt");
+CREATE INDEX IF NOT EXISTS "MomentumTask_source_externalId_idx" ON "MomentumTask"("source", "externalId");
+
+CREATE TABLE IF NOT EXISTS "MomentumEvidence" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "userAccountId" TEXT NOT NULL,
+    "taskId" TEXT,
+    "source" TEXT NOT NULL DEFAULT 'manual',
+    "title" TEXT NOT NULL,
+    "url" TEXT,
+    "summary" TEXT NOT NULL,
+    "skillsJson" TEXT NOT NULL DEFAULT '[]',
+    "capturedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "MomentumEvidence_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "MomentumTask" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "MomentumEvidence_userAccountId_fkey" FOREIGN KEY ("userAccountId") REFERENCES "UserAccount" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS "MomentumEvidence_userAccountId_idx" ON "MomentumEvidence"("userAccountId");
+CREATE INDEX IF NOT EXISTS "MomentumEvidence_source_idx" ON "MomentumEvidence"("source");
+
+CREATE TABLE IF NOT EXISTS "MomentumIntegration" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "userAccountId" TEXT NOT NULL,
+    "provider" TEXT NOT NULL,
+    "label" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'not_connected',
+    "configJson" TEXT NOT NULL DEFAULT '{}',
+    "lastSyncedAt" DATETIME,
+    "lastError" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "MomentumIntegration_userAccountId_fkey" FOREIGN KEY ("userAccountId") REFERENCES "UserAccount" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "MomentumIntegration_userAccountId_provider_key" ON "MomentumIntegration"("userAccountId", "provider");
+CREATE INDEX IF NOT EXISTS "MomentumIntegration_userAccountId_status_idx" ON "MomentumIntegration"("userAccountId", "status");
+
+CREATE TABLE IF NOT EXISTS "MomentumCheckIn" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "userAccountId" TEXT NOT NULL,
+    "mood" TEXT,
+    "availableMinutes" INTEGER NOT NULL DEFAULT 120,
+    "focus" TEXT,
+    "blockers" TEXT,
+    "planJson" TEXT NOT NULL DEFAULT '[]',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "MomentumCheckIn_userAccountId_fkey" FOREIGN KEY ("userAccountId") REFERENCES "UserAccount" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS "MomentumCheckIn_userAccountId_createdAt_idx" ON "MomentumCheckIn"("userAccountId", "createdAt");
+
 CREATE TABLE IF NOT EXISTS "AppSettings" (
     "id" TEXT NOT NULL PRIMARY KEY DEFAULT 'singleton',
     "llmProvider" TEXT NOT NULL DEFAULT 'mock',
