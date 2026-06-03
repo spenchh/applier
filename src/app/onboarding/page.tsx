@@ -1,50 +1,44 @@
-import { ProfileForm } from "@/components/profile-form";
-import { PageHeader, Panel } from "@/components/ui";
-import { requireUser } from "@/lib/auth";
-import { getPrimaryProfile } from "@/lib/services/profile";
-import { toList } from "@/lib/json";
+import { Sparkles, ListChecks } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
+import { Card, CardContent } from "@/components/ui/card";
+import { ProfileForm } from "@/components/forms/profile-form";
+import { getOrCreateProfile } from "@/lib/services/profile-service";
+import { decrypt } from "@/lib/encryption";
 
 export const dynamic = "force-dynamic";
 
 export default async function OnboardingPage() {
-  const user = await requireUser("/onboarding");
-  const profile = await getPrimaryProfile(user.id);
+  const profile = await getOrCreateProfile();
   return (
-    <>
-      <PageHeader title="Onboarding" eyebrow="Profile basics" />
-      <Panel>
-        <ProfileForm
-          defaults={{
-            legalName: profile?.legalName ?? "",
-            preferredName: profile?.preferredName ?? "",
-            email: profile?.email ?? "",
-            phone: profile?.phone ?? "",
-            location: profile?.location ?? "",
-            school: profile?.school ?? "",
-            degree: profile?.degree ?? "",
-            major: profile?.major ?? "",
-            minor: profile?.minor ?? "",
-            graduationDate: toDateInput(profile?.graduationDate),
-            gpa: profile?.gpa ?? "",
-            workAuthorization: profile?.workAuthorization ?? "",
-            careerInterests: profile?.careerInterests ?? "",
-            sponsorshipRequired: profile?.sponsorshipRequired ?? false,
-            earliestStartDate: toDateInput(profile?.earliestStartDate),
-            preferredTerms: toList(profile?.preferredTerms).join(", "),
-            preferredLocations: toList(profile?.preferredLocations).join(", "),
-            remotePreference: profile?.remotePreference ?? "",
-            portfolioUrl: profile?.portfolioUrl ?? "",
-            githubUrl: profile?.githubUrl ?? "",
-            linkedinUrl: profile?.linkedinUrl ?? "",
-            websiteUrl: profile?.websiteUrl ?? "",
-          }}
-          showAssistant
-        />
-      </Panel>
-    </>
-  );
-}
+    <div>
+      <PageHeader
+        title="Onboarding"
+        description="A few basics so InternPilot can tailor materials. Sensitive fields are optional — but anything you do enter must be accurate."
+      />
 
-function toDateInput(value?: Date | null) {
-  return value ? value.toISOString().slice(0, 10) : "";
+      <Card className="mb-6 border-primary/20 bg-primary/5">
+        <CardContent className="flex items-start gap-3 p-4 text-sm text-muted-foreground">
+          <Sparkles className="mt-0.5 size-5 shrink-0 text-primary" />
+          <div className="space-y-1">
+            <p>
+              <strong className="text-foreground">How this works:</strong> we never invent facts. Legal and
+              eligibility answers (work authorization, sponsorship, availability) are used only when a posting asks
+              and you confirm them per application.
+            </p>
+            <p className="flex items-center gap-1.5">
+              <ListChecks className="size-4" /> After this, add a few Truth Vault facts and paste a job to see the
+              full flow.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <ProfileForm
+        profile={profile}
+        redirectTo="/profile?tab=vault"
+        decryptedPhone={decrypt(profile.phone) ?? ""}
+        decryptedWorkAuth={decrypt(profile.workAuthorization) ?? ""}
+      />
+    </div>
+  );
 }

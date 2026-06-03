@@ -1,23 +1,45 @@
 "use client";
 
+import * as React from "react";
 import { Check, Copy } from "lucide-react";
-import { useState } from "react";
+import { Button, type ButtonProps } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-export function CopyButton({ value, label = "Copy" }: { value: string; label?: string }) {
-  const [copied, setCopied] = useState(false);
+export function CopyButton({
+  value,
+  label = "Copy",
+  className,
+  size = "sm",
+  variant = "outline",
+}: {
+  value: string;
+  label?: string;
+  className?: string;
+  size?: ButtonProps["size"];
+  variant?: ButtonProps["variant"];
+}) {
+  const [copied, setCopied] = React.useState(false);
+
+  async function onCopy() {
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch {
+      // Fallback for environments without clipboard API.
+      const el = document.createElement("textarea");
+      el.value = value;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
+
   return (
-    <button
-      type="button"
-      className="inline-flex items-center gap-2 rounded-md border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-medium hover:bg-[#f0f0ea]"
-      onClick={async () => {
-        await navigator.clipboard.writeText(value);
-        setCopied(true);
-        window.setTimeout(() => setCopied(false), 1400);
-      }}
-      title={label}
-    >
-      {copied ? <Check className="h-3.5 w-3.5" aria-hidden /> : <Copy className="h-3.5 w-3.5" aria-hidden />}
+    <Button type="button" size={size} variant={variant} onClick={onCopy} className={cn(className)}>
+      {copied ? <Check className="text-success" /> : <Copy />}
       {copied ? "Copied" : label}
-    </button>
+    </Button>
   );
 }
