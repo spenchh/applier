@@ -10,7 +10,7 @@ import { jobInputSchema, momentumCheckInSchema, momentumEvidenceSchema, momentum
 import { approveApplication, markSubmitted, updateApplicationStatus } from "@/lib/services/application";
 import { normalizeDiscoveryQuery, saveDiscoverySearch, saveSourcedJobToInbox } from "@/lib/services/discovery";
 import { createJobFromInput } from "@/lib/services/job";
-import { completeMomentumTask, createMomentumCheckIn, createMomentumEvidence, createMomentumGoal, createMomentumTask, importMomentumText, saveMomentumIntegration, syncCanvasAssignments, syncGitHubActivity } from "@/lib/services/momentum";
+import { completeMomentumTask, createMomentumCheckIn, createMomentumEvidence, createMomentumGoal, createMomentumTask, importCalendarFeed, importMomentumText, saveMomentumIntegration, syncCanvasAssignments, syncGitHubActivity } from "@/lib/services/momentum";
 import { createProfileFact, ensureProfile, upsertProfile } from "@/lib/services/profile";
 import { createResume } from "@/lib/services/resume";
 import { parseDate } from "@/lib/services/shared";
@@ -299,6 +299,22 @@ export async function importMomentumTextAction(formData: FormData) {
     source: formString(formData, "source") || "syllabus",
     text: formString(formData, "text"),
   });
+  revalidatePath("/");
+  revalidatePath("/integrations");
+  revalidatePath("/plan");
+}
+
+export async function importCalendarFeedAction(formData: FormData) {
+  const user = await requireUser("/integrations");
+  try {
+    await importCalendarFeed(user.id, {
+      sourceName: formString(formData, "sourceName") || "Calendar",
+      calendarUrl: formString(formData, "calendarUrl"),
+      calendarText: formString(formData, "calendarText"),
+    });
+  } catch {
+    // The service records connector status/error; keep the user on the page.
+  }
   revalidatePath("/");
   revalidatePath("/integrations");
   revalidatePath("/plan");

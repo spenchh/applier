@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { readJson, writeJson } from "@/lib/json";
 import { ensureDatabaseReady } from "@/lib/runtime-db";
+import { estimateCalendarMinutes, parseCalendarFeed } from "@/lib/services/calendar-feed";
 import { clamp, parseDate } from "@/lib/services/shared";
 
 type PlanItem = {
@@ -29,6 +30,7 @@ const providerLabels: Record<string, string> = {
   github: "GitHub",
   google_calendar: "Google Calendar",
   outlook: "Outlook / Microsoft 365",
+  calendar_ics: "Calendar import",
   simplify: "Simplify",
   handshake: "Handshake",
   syllabus: "Syllabus and notes",
@@ -374,6 +376,49 @@ export async function syncMicrosoftCalendarEvents(userAccountId: string, input: 
   }
 }
 
+export async function importCalendarFeed(userAccountId: string, input: { calendarUrl?: string; calendarText?: string; sourceName?: string }) {
+  await ensureDatabaseReady();
+  const sourceName = input.sourceName?.trim() || "Calendar";
+  try {
+    const text = await readCalendarFeed(input);
+    const events = parseCalendarFeed(text).slice(0, 80);
+    let created = 0;
+    for (const event of events) {
+      if (!event.title || !event.startsAt) continue;
+      await upsertTask(userAccountId, {
+        source: "calendar_ics",
+        externalId: event.uid || `${event.title}:${event.startsAt.toISOString()}`,
+        title: event.title,
+        description: [event.description, event.location].filter(Boolean).join(" - ") || `Imported from ${sourceName}.`,
+        category: inferCalendarCategory(event.title),
+        priority: event.startsAt < addDays(new Date(), 3) ? "high" : "medium",
+        estimatedMinutes: event.allDay ? 30 : estimateCalendarMinutes(event.startsAt, event.endsAt),
+        dueAt: event.startsAt,
+        proofNote: "Attend, finish, reschedule, or intentionally skip this commitment.",
+        proofRequired: false,
+      });
+      created += 1;
+    }
+    await saveMomentumIntegration(userAccountId, {
+      provider: "calendar_ics",
+      label: sourceName,
+      config: { importMode: input.calendarUrl ? "ics_url" : "ics_text", sourceName },
+      status: "connected",
+      lastError: null,
+    });
+    return { created };
+  } catch (error) {
+    await saveMomentumIntegration(userAccountId, {
+      provider: "calendar_ics",
+      label: sourceName,
+      config: { importMode: input.calendarUrl ? "ics_url" : "ics_text", sourceName },
+      status: "error",
+      lastError: error instanceof Error ? error.message : "Calendar import failed",
+    });
+    throw error;
+  }
+}
+
 export async function importMomentumText(userAccountId: string, input: { source: string; text: string }) {
   await ensureDatabaseReady();
   const tasks = extractTasksFromText(input.text, input.source);
@@ -596,6 +641,37 @@ function inferCalendarCategory(title: string) {
   if (/\b(interview|apply|recruiter|career|internship|resume|handshake|simplify|linkedin)\b/i.test(title)) return "career";
   if (/\b(class|lecture|lab|exam|quiz|homework|office hours|project|assignment|midterm|final)\b/i.test(title)) return "school";
   return "personal";
+}
+
+async function readCalendarFeed(input: { calendarUrl?: string; calendarText?: string }) {
+  const calendarText = input.calendarText?.trim();
+  if (calendarText) {
+    if (!calendarText.includes("BEGIN:VCALENDAR")) throw new Error("Paste a valid .ics calendar export.");
+    return calendarText;
+  }
+
+  const calendarUrl = input.calendarUrl?.trim();
+  if (!calendarUrl) throw new Error("Add an iCal/ICS calendar URL or paste calendar export text.");
+  let url: URL;
+  try {
+    url = new URL(calendarUrl);
+  } catch {
+    throw new Error("Add a valid calendar URL.");
+  }
+  if (url.protocol !== "https:" && url.protocol !== "http:") throw new Error("Calendar URL must start with http or https.");
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12_000);
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) throw new Error(`Calendar feed returned ${response.status}`);
+    const text = await response.text();
+    if (text.length > 1_500_000) throw new Error("Calendar feed is too large. Try exporting only your current calendar.");
+    if (!text.includes("BEGIN:VCALENDAR")) throw new Error("That link did not return an iCal/ICS calendar.");
+    return text;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 function normalizeCanvasUrl(canvasUrl: string) {

@@ -6,6 +6,7 @@ Momentum is an AI accountability command center for students. It turns school de
 
 - Builds a daily "do next" plan from commitments, goals, deadlines, and proof gaps.
 - Tracks goals, tasks, completion proof, and weekly accountability signals.
+- Imports iCal/ICS calendar links or pasted calendar exports without provider OAuth setup.
 - Syncs Canvas assignments through Canvas OAuth sign-in when a Canvas app is configured.
 - Syncs public GitHub repositories by username, with optional GitHub OAuth sign-in for private repositories.
 - Syncs Google Calendar and Microsoft 365 calendar events through provider sign-in when OAuth credentials are configured.
@@ -26,7 +27,9 @@ npm run dev
 
 ## OAuth connections
 
-Public GitHub sync works without OAuth by entering a GitHub username on the Connections page. Provider sign-in for private repositories, Canvas, Google Calendar, and Microsoft 365 requires OAuth app credentials:
+Calendar import works without OAuth through an iCal/ICS URL or pasted `.ics` export on the Connections page. Public GitHub sync also works without OAuth by entering a GitHub username.
+
+Provider sign-in for private repositories, Canvas, Google Calendar, and Microsoft 365 requires OAuth app credentials:
 
 - `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`
 - `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`

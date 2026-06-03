@@ -1,4 +1,4 @@
-import { importMomentumTextAction, syncGitHubAction } from "@/app/actions";
+import { importCalendarFeedAction, importMomentumTextAction, syncGitHubAction } from "@/app/actions";
 import { Badge, PageHeader, Panel, inputClass, labelClass } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
 import { requireUser } from "@/lib/auth";
@@ -14,8 +14,10 @@ export default async function IntegrationsPage() {
   const integrations = new Map(dashboard.integrations.map((integration) => [integration.provider, integration]));
   const canvas = integrations.get("canvas");
   const github = integrations.get("github");
+  const calendarIcs = integrations.get("calendar_ics");
   const canvasConfig = readJson<{ canvasUrl?: string }>(canvas?.configJson, {});
   const githubConfig = readJson<{ username?: string }>(github?.configJson, {});
+  const calendarConfig = readJson<{ sourceName?: string }>(calendarIcs?.configJson, {});
   const setup = {
     canvas: oauthSetupStatus("canvas"),
     github: oauthSetupStatus("github"),
@@ -76,9 +78,31 @@ export default async function IntegrationsPage() {
         <ImportPanel source="handshake" title="Handshake opportunities" placeholder={"Paste saved jobs, career fair notes, recruiter messages, or event deadlines from Handshake."} />
 
         <Panel>
-          <ConnectionHeader title="Google Calendar and Outlook" status={oauthStatus(integrations)} syncedAt={integrations.get("google_calendar")?.lastSyncedAt ?? integrations.get("outlook")?.lastSyncedAt ?? null} />
-          <p className="mt-2 text-sm text-stone-700">Connect your calendar through the provider sign-in screen. Momentum reads upcoming events and turns them into realistic commitments.</p>
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <ConnectionHeader title="Calendar" status={calendarStatus(integrations)} syncedAt={calendarIcs?.lastSyncedAt ?? integrations.get("google_calendar")?.lastSyncedAt ?? integrations.get("outlook")?.lastSyncedAt ?? null} />
+          <p className="mt-2 text-sm text-stone-700">Import your schedule without waiting on Google or Microsoft app setup. Momentum turns upcoming events into realistic commitments for the daily plan.</p>
+          <form action={importCalendarFeedAction} className="mt-4 grid gap-4">
+            <label className={labelClass}>
+              Calendar name
+              <input name="sourceName" className={inputClass} defaultValue={calendarConfig.sourceName ?? "My calendar"} placeholder="Northwestern schedule" />
+            </label>
+            <label className={labelClass}>
+              iCal / ICS URL
+              <input name="calendarUrl" className={inputClass} placeholder="https://calendar.google.com/calendar/ical/..." inputMode="url" />
+              <span className="text-xs font-normal text-[var(--muted)]">Use a calendar export/share link. Momentum imports the events and does not store this URL.</span>
+            </label>
+            <label className={labelClass}>
+              Or paste .ics export text
+              <textarea name="calendarText" className={inputClass} rows={5} placeholder={"BEGIN:VCALENDAR\nBEGIN:VEVENT\nSUMMARY:ECE office hours\nDTSTART:20260605T190000Z\nEND:VEVENT\nEND:VCALENDAR"} />
+            </label>
+            <FriendlyError error={calendarIcs?.lastError} provider="Calendar" />
+            <SubmitButton>Import calendar events</SubmitButton>
+          </form>
+
+          <div className="mt-5 border-t border-[var(--line)] pt-4">
+            <p className="text-sm font-medium">Optional direct sign-in</p>
+            <p className="mt-1 text-sm text-[var(--muted)]">These are cleaner when configured, but the import above is the working path right now.</p>
+          </div>
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
             <ProviderLoginAction
               title="Google Calendar"
               body="Uses Google's consent screen; no password is handled by Momentum."
@@ -179,7 +203,10 @@ function ImportPanel({ source, title, placeholder }: { source: string; title: st
   );
 }
 
-function oauthStatus(integrations: Map<string, { status: string }>) {
+function calendarStatus(integrations: Map<string, { status: string }>) {
+  const calendar = integrations.get("calendar_ics")?.status;
+  if (calendar === "connected") return "connected";
+  if (calendar === "error") return "error";
   const google = integrations.get("google_calendar")?.status;
   const outlook = integrations.get("outlook")?.status;
   if (google === "connected" || outlook === "connected") return "connected";

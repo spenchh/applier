@@ -9,6 +9,7 @@ import { generateAnswerMock, parseJobPostingMock, truthCheckMaterial, type FactL
 import { canSubmitApplication } from "./services/application";
 import { matchesDiscoveryQuery, normalizeDiscoveryQuery, sourcedJobToJobInput } from "./services/discovery";
 import { calculateFit } from "./services/fit";
+import { parseCalendarFeed } from "./services/calendar-feed";
 import { buildResumeDocxBuffer, extractResumeTextFromFile, parseResumeStructure } from "./services/resume";
 import { resumeUploadSchema } from "./schemas";
 import { dedupeHash, extractTechnologies, isSensitiveQuestion } from "./text";
@@ -239,6 +240,26 @@ React, SQL, Git`);
     expect(text).toContain("Built a React dashboard");
   });
 
+  it("parses iCal calendar feeds into upcoming events", () => {
+    const startsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const endsAt = new Date(startsAt.getTime() + 60 * 60 * 1000);
+    const events = parseCalendarFeed(`BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:test-office-hours
+SUMMARY:ECE office hours
+DESCRIPTION:Bring lab questions\\, notes\\, and draft report.
+DTSTART:${formatIcsUtc(startsAt)}
+DTEND:${formatIcsUtc(endsAt)}
+END:VEVENT
+END:VCALENDAR`);
+
+    expect(events).toHaveLength(1);
+    expect(events[0]?.title).toBe("ECE office hours");
+    expect(events[0]?.description).toContain("lab questions, notes");
+    expect(events[0]?.startsAt.toISOString()).toBe(startsAt.toISOString().replace(/\.\d{3}Z$/, ".000Z"));
+  });
+
   it("exports a tailored resume as a readable DOCX buffer", async () => {
     const buffer = await buildResumeDocxBuffer({
       text: `Demo Student
@@ -256,3 +277,7 @@ PROJECTS
     expect(raw.value).toContain("Projects");
   });
 });
+
+function formatIcsUtc(date: Date) {
+  return date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+}
