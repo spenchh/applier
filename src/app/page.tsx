@@ -69,7 +69,7 @@ export default async function DashboardPage() {
           </div>
           <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             {recommendations.length ? recommendations.map((job) => (
-              <div key={job.id} className="rounded-md border border-[var(--line)] p-3">
+              <div key={job.id} className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-3 shadow-sm">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="font-medium">{job.title}</p>
@@ -80,7 +80,7 @@ export default async function DashboardPage() {
                 <p className="mt-3 line-clamp-2 text-sm text-stone-700">{job.rawDescription}</p>
                 <form action={saveSourcedJobAction} className="mt-3">
                   <input type="hidden" name="sourcedJobId" value={job.id} />
-                  <button type="submit" className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm font-medium hover:bg-[#f0f0ea]">
+                  <button type="submit" className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm font-medium shadow-sm transition hover:bg-[var(--surface-soft)]">
                     <BookmarkPlus className="h-4 w-4" aria-hidden />
                     Save
                   </button>
@@ -102,7 +102,7 @@ export default async function DashboardPage() {
           <div className="mt-4 grid gap-3">
             {ready.length ? (
               ready.slice(0, 5).map((application) => (
-                <Link key={application.id} href={`/applications/${application.id}/tailor`} className="flex items-center justify-between rounded-md border border-[var(--line)] p-3 hover:bg-[#f8f8f2]">
+                <Link key={application.id} href={`/applications/${application.id}/tailor`} className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--surface)] p-3 transition hover:bg-[var(--surface-soft)] hover:shadow-sm">
                   <div>
                     <p className="font-medium">{application.jobPosting.title}</p>
                     <p className="text-sm text-[var(--muted)]">{application.jobPosting.company.name}</p>
@@ -124,7 +124,7 @@ export default async function DashboardPage() {
           <div className="mt-4 grid gap-3">
             {recentJobs.length ? (
               recentJobs.map((job) => (
-                <Link key={job.id} href={`/jobs/${job.id}`} className="rounded-md border border-[var(--line)] p-3 hover:bg-[#f8f8f2]">
+                <Link key={job.id} href={`/jobs/${job.id}`} className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-3 transition hover:bg-[var(--surface-soft)] hover:shadow-sm">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-medium">{job.title}</p>

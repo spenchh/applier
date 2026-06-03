@@ -47,7 +47,7 @@ export default async function TailoringPage({ params }: { params: Promise<{ id: 
                 </div>
               ) : null}
             </div>
-            {resume ? <pre className="mt-4 whitespace-pre-wrap rounded-md bg-stone-50 p-4 text-sm leading-relaxed">{resume.tailoredText}</pre> : <p className="mt-3 text-sm text-[var(--muted)]">No resume version was generated because no master resume exists.</p>}
+            {resume ? <pre className="mt-4 whitespace-pre-wrap rounded-lg bg-[var(--surface-soft)] p-4 text-sm leading-relaxed">{resume.tailoredText}</pre> : <p className="mt-3 text-sm text-[var(--muted)]">No resume version was generated because no master resume exists.</p>}
           </Panel>
 
           <Panel>
@@ -55,7 +55,7 @@ export default async function TailoringPage({ params }: { params: Promise<{ id: 
               <h2 className="text-lg font-semibold">Cover letter</h2>
               {cover ? <CopyButton value={cover.text} /> : null}
             </div>
-            {cover ? <pre className="mt-4 whitespace-pre-wrap rounded-md bg-stone-50 p-4 text-sm leading-relaxed">{cover.text}</pre> : null}
+            {cover ? <pre className="mt-4 whitespace-pre-wrap rounded-lg bg-[var(--surface-soft)] p-4 text-sm leading-relaxed">{cover.text}</pre> : null}
           </Panel>
 
           <Panel>
@@ -73,7 +73,7 @@ export default async function TailoringPage({ params }: { params: Promise<{ id: 
             <h2 className="text-lg font-semibold">Application answers</h2>
             <div className="mt-4 grid gap-3">
               {application.answers.map((answer) => (
-                <div key={answer.id} className="rounded-md border border-[var(--line)] p-4">
+                <div key={answer.id} className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4 shadow-sm">
                   <div className="flex items-start justify-between gap-3">
                     <p className="text-sm font-medium">{answer.jobQuestion?.questionText ?? "Application answer"}</p>
                     <Badge tone={answer.truthCheckStatus === "supported" ? "good" : "warn"}>{answer.truthCheckStatus.replaceAll("_", " ")}</Badge>

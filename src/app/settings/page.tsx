@@ -24,7 +24,7 @@ export default async function SettingsPage() {
       <div className="grid gap-6 xl:grid-cols-2">
         <Panel>
           <h2 className="mb-4 text-lg font-semibold">AI wrapper</h2>
-          <div className="mb-4 rounded-md border border-[var(--line)] bg-stone-50 p-3 text-sm text-stone-700">
+          <div className="mb-4 rounded-lg border border-[var(--line)] bg-[var(--surface-soft)] p-3 text-sm text-stone-700">
             <p className="font-medium">Current mode: {aiStatus.mode === "local_mock" ? "Local mock" : aiStatus.effectiveProvider}</p>
             <p>Selected provider: {aiStatus.provider}</p>
             <p>Model: {aiStatus.model}</p>

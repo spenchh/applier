@@ -1,10 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7f7f4;
-  --foreground: #1d211f;
-  --muted: #6b7280;
-  --line: #d8d8d0;
+  --background: #f4f6f1;
+  --foreground: #20241f;
+  --muted: #69736d;
+  --line: #deddd2;
+  --surface: #fffffc;
+  --surface-soft: #f9faf5;
+  --surface-warm: #f1f4eb;
+  --brand: #1d5a49;
+  --brand-hover: #174638;
+  --focus: #bfe8d4;
+  --shadow-soft: 0 10px 30px rgba(38, 44, 35, 0.06);
 }
 
 @theme inline {
@@ -18,6 +25,7 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  text-rendering: optimizeLegibility;
 }
 
 button,
@@ -28,7 +36,7 @@ select {
 }
 
 ::selection {
-  background: #c7eadb;
+  background: var(--focus);
 }
 
 .print-resume {

@@ -65,7 +65,7 @@ export default async function DiscoverPage({ searchParams }: PageProps) {
             </select>
           </label>
           <div className="flex items-end lg:col-span-1">
-            <button type="submit" className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-[#17473a] px-4 py-2 text-sm font-medium text-white hover:bg-[#11352c]">
+            <button type="submit" className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-[var(--brand-hover)]">
               <Search className="h-4 w-4" aria-hidden />
               Search
             </button>
@@ -129,7 +129,7 @@ export default async function DiscoverPage({ searchParams }: PageProps) {
                 <option value="daily">Daily alert</option>
                 <option value="weekly">Weekly alert</option>
               </select>
-              <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-md border border-[var(--line)] bg-white px-4 py-2 text-sm font-medium hover:bg-[#f0f0ea]">
+              <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-4 py-2.5 text-sm font-medium shadow-sm transition hover:bg-[var(--surface-soft)]">
                 <Bell className="h-4 w-4" aria-hidden />
                 Save
               </button>
@@ -152,7 +152,7 @@ export default async function DiscoverPage({ searchParams }: PageProps) {
               {sources.map((source) => {
                 const config = readJson<{ configured?: boolean; reason?: string | null }>(source.configJson, {});
                 return (
-                  <div key={source.id} className="rounded-md border border-[var(--line)] p-3">
+                  <div key={source.id} className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-3">
                     <div className="flex items-center justify-between gap-3">
                       <p className="font-medium">{source.label}</p>
                       <Badge tone={source.enabled ? "good" : "neutral"}>{source.enabled ? "enabled" : "off"}</Badge>
@@ -169,7 +169,7 @@ export default async function DiscoverPage({ searchParams }: PageProps) {
             <h2 className="text-lg font-semibold">Saved searches</h2>
             <div className="mt-4 grid gap-2">
               {savedSearches.length ? savedSearches.map((search) => (
-                <div key={search.id} className="rounded-md border border-[var(--line)] p-3 text-sm">
+                <div key={search.id} className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-3 text-sm">
                   <p className="font-medium">{search.name}</p>
                   <p className="text-[var(--muted)]">{search.alertCadence === "none" ? "No alert" : `${search.alertCadence} alert`}</p>
                 </div>
@@ -185,7 +185,7 @@ export default async function DiscoverPage({ searchParams }: PageProps) {
 function DiscoveryCard({ job }: { job: DiscoveryResult }) {
   const risks = toList(job.riskFlagsJson);
   return (
-    <article className="rounded-lg border border-[var(--line)] bg-white p-4 shadow-sm">
+    <article className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[var(--shadow-soft)]">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -204,14 +204,14 @@ function DiscoveryCard({ job }: { job: DiscoveryResult }) {
           {job.missingKeywords.length ? <p className="mt-3 text-xs text-amber-800">Missing evidence to strengthen: {job.missingKeywords.join(", ")}</p> : null}
         </div>
         <div className="grid min-w-48 gap-3">
-          <div className="rounded-md border border-[var(--line)] p-3">
+          <div className="rounded-lg border border-[var(--line)] bg-[var(--surface-soft)] p-3">
             <p className="text-xs font-medium uppercase tracking-[0.08em] text-[var(--muted)]">Fit</p>
             <div className="mt-2"><Score value={job.fitScore} /></div>
             <p className="mt-2 text-xs text-[var(--muted)]">{job.fitSummary}</p>
           </div>
           <form action={saveSourcedJobAction}>
             <input type="hidden" name="sourcedJobId" value={job.id} />
-            <button type="submit" className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-[#17473a] px-4 py-2 text-sm font-medium text-white hover:bg-[#11352c]">
+            <button type="submit" className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-[var(--brand-hover)]">
               <BookmarkPlus className="h-4 w-4" aria-hidden />
               Save to inbox
             </button>

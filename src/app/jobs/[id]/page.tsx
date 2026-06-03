@@ -38,14 +38,14 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
               {job.internshipTerm ? <Badge tone="info">{job.internshipTerm}</Badge> : null}
               {isRestrictedPlatform(job.sourceUrl) ? <Badge tone="warn">restricted platform: manual only</Badge> : null}
             </div>
-            <pre className="mt-5 whitespace-pre-wrap rounded-md bg-stone-50 p-4 text-sm leading-relaxed text-stone-800">{job.rawDescription}</pre>
+            <pre className="mt-5 whitespace-pre-wrap rounded-lg bg-[var(--surface-soft)] p-4 text-sm leading-relaxed text-stone-800">{job.rawDescription}</pre>
           </Panel>
 
           <Panel>
             <h2 className="text-lg font-semibold">Application questions</h2>
             <div className="mt-4 grid gap-3">
               {job.questions.map((question) => (
-                <div key={question.id} className="rounded-md border border-[var(--line)] p-3">
+                <div key={question.id} className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-3 shadow-sm">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-sm font-medium">{question.questionText}</p>
                     {question.sensitive ? <Badge tone="warn">sensitive</Badge> : <Badge tone="good">standard</Badge>}

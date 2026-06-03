@@ -66,7 +66,7 @@ export default async function ResumesPage() {
                   </div>
                   {resume.isMaster ? <Badge tone="good">master</Badge> : <Badge>base</Badge>}
                 </div>
-                <pre className="mt-4 max-h-64 overflow-auto rounded-md bg-stone-50 p-3 text-xs leading-relaxed text-stone-700">{resume.rawText}</pre>
+                <pre className="mt-4 max-h-64 overflow-auto rounded-lg bg-[var(--surface-soft)] p-3 text-xs leading-relaxed text-stone-700">{resume.rawText}</pre>
               </Panel>
             ))
           ) : (

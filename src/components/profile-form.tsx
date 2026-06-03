@@ -169,8 +169,8 @@ export function ProfileForm({ defaults, showAssistant = false }: { defaults: Pro
             <span className="font-semibold text-[#1d211f]">Profile completion</span>
             <span className="font-medium text-[var(--muted)]">{completion}%</span>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-stone-200">
-            <div className="h-full rounded-full bg-[#17473a]" style={{ width: `${completion}%` }} />
+          <div className="h-2 overflow-hidden rounded-full bg-stone-200/80">
+            <div className="h-full rounded-full bg-[var(--brand)]" style={{ width: `${completion}%` }} />
           </div>
         </section>
       ) : null}
@@ -263,12 +263,12 @@ export function ProfileForm({ defaults, showAssistant = false }: { defaults: Pro
         </label>
         <div className="grid gap-3 md:grid-cols-3">
           {internshipLanes.map((lane) => (
-            <div key={lane.title} className="rounded-md border border-[var(--line)] bg-[#fbfbf8] p-3">
+            <div key={lane.title} className="rounded-lg border border-[var(--line)] bg-[var(--surface-soft)] p-3 shadow-sm">
               <p className="text-sm font-semibold text-[#1d211f]">{lane.title}</p>
               <p className="mt-1 text-xs text-stone-600">{lane.why}</p>
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {lane.searches.map((search) => (
-                  <span key={search} className="rounded-md bg-white px-2 py-1 text-xs font-medium text-stone-700 ring-1 ring-stone-200">
+                  <span key={search} className="rounded-full bg-[var(--surface)] px-2.5 py-1 text-xs font-medium text-stone-700 ring-1 ring-stone-200">
                     {search}
                   </span>
                 ))}
@@ -379,7 +379,7 @@ function SelectControl({ children, ...props }: React.SelectHTMLAttributes<HTMLSe
     <span className="relative block">
       <select
         {...props}
-        className="w-full appearance-none rounded-md border border-[var(--line)] bg-white px-3 py-2 pr-10 text-sm outline-none ring-emerald-200 transition hover:border-stone-400 focus:border-emerald-600 focus:ring-4"
+        className="w-full appearance-none rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-2.5 pr-10 text-sm outline-none ring-[var(--focus)] transition hover:border-stone-400 focus:border-emerald-600 focus:ring-4"
       >
         {children}
       </select>
@@ -397,7 +397,7 @@ function SuggestionRow({ values, onPick }: { values: string[]; onPick: (value: s
   return (
     <span className="flex flex-wrap gap-2 pt-1">
       {values.map((value) => (
-        <button key={value} type="button" onClick={() => onPick(value)} className="rounded-md bg-stone-100 px-2 py-1 text-xs font-medium text-stone-700 hover:bg-stone-200">
+        <button key={value} type="button" onClick={() => onPick(value)} className="rounded-full bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-700 transition hover:bg-stone-200">
           {value}
         </button>
       ))}
@@ -471,26 +471,26 @@ type ProfileAssetAudit = {
 
 function ProfileAssetAudit({ audit, portfolioScan, portfolioScanStatus }: { audit: ProfileAssetAudit; portfolioScan: PortfolioScan | null; portfolioScanStatus: "idle" | "loading" | "error" }) {
   return (
-    <div className="grid gap-4 rounded-md border border-[var(--line)] bg-[#fbfbf8] p-4">
+    <div className="grid gap-4 rounded-lg border border-[var(--line)] bg-[var(--surface-soft)] p-4 shadow-sm">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-[#1d211f]">Profile asset audit</p>
           <p className="mt-1 text-xs text-stone-600">Generated from your LinkedIn, GitHub, portfolio, and website links.</p>
         </div>
-        <span className="rounded-md bg-white px-2 py-1 text-xs font-semibold text-[#17473a] ring-1 ring-emerald-200">{audit.score}% ready</span>
+        <span className="rounded-full bg-[var(--surface)] px-2.5 py-1 text-xs font-semibold text-[var(--brand)] ring-1 ring-emerald-200">{audit.score}% ready</span>
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-stone-200">
-        <div className="h-full rounded-full bg-[#17473a]" style={{ width: `${audit.score}%` }} />
+        <div className="h-full rounded-full bg-[var(--brand)]" style={{ width: `${audit.score}%` }} />
       </div>
       <div className="grid gap-3 lg:grid-cols-2">
         <AuditList title="Looks ready" items={audit.strengths} empty="Add professional links to start the audit." />
         <AuditList title="Improve next" items={audit.gaps} empty="No major gaps detected from the links entered." />
       </div>
-      <div className="rounded-md bg-white p-3 text-sm text-stone-700 ring-1 ring-stone-200">
+      <div className="rounded-lg bg-[var(--surface)] p-3 text-sm text-stone-700 shadow-sm ring-1 ring-stone-200">
         <p className="font-semibold text-[#1d211f]">Generated recruiter summary</p>
         <p className="mt-2">{audit.summary}</p>
       </div>
-      <div className="rounded-md bg-white p-3 text-sm text-stone-700 ring-1 ring-stone-200">
+      <div className="rounded-lg bg-[var(--surface)] p-3 text-sm text-stone-700 shadow-sm ring-1 ring-stone-200">
         <p className="font-semibold text-[#1d211f]">Portfolio website scan</p>
         {portfolioScanStatus === "loading" ? <p className="mt-2 text-[var(--muted)]">Scanning public page metadata...</p> : null}
         {portfolioScanStatus === "error" ? <p className="mt-2 text-amber-700">Could not scan that site automatically. The checklist below still applies.</p> : null}
@@ -505,7 +505,7 @@ function ProfileAssetAudit({ audit, portfolioScan, portfolioScanStatus }: { audi
           <p className="mt-2 text-[var(--muted)]">Add a portfolio or website URL to scan public page basics.</p>
         ) : null}
       </div>
-      <div className="rounded-md bg-white p-3 text-sm text-stone-700 ring-1 ring-stone-200">
+      <div className="rounded-lg bg-[var(--surface)] p-3 text-sm text-stone-700 shadow-sm ring-1 ring-stone-200">
         <p className="font-semibold text-[#1d211f]">Recruiter contact form should ask for</p>
         <ul className="mt-2 grid gap-1">
           {audit.recruiterInquiry.map((item) => (
@@ -522,7 +522,7 @@ function AuditList({ title, items, empty }: { title: string; items: string[]; em
     <div>
       <p className="text-xs font-semibold uppercase tracking-[0.08em] text-stone-500">{title}</p>
       <ul className="mt-2 grid gap-2 text-sm text-stone-700">
-        {items.length ? items.map((item) => <li key={item} className="rounded-md bg-white px-3 py-2 ring-1 ring-stone-200">{item}</li>) : <li className="text-[var(--muted)]">{empty}</li>}
+        {items.length ? items.map((item) => <li key={item} className="rounded-lg bg-[var(--surface)] px-3 py-2 shadow-sm ring-1 ring-stone-200">{item}</li>) : <li className="text-[var(--muted)]">{empty}</li>}
       </ul>
     </div>
   );

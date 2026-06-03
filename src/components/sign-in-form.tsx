@@ -32,7 +32,7 @@ export function SignInForm({ next }: { next: string }) {
     <form onSubmit={handleSubmit} className="grid gap-4">
       <input type="hidden" name="next" value={next} />
       {error ? (
-        <div role="alert" className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-800">
+        <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-800 shadow-sm">
           {error}
         </div>
       ) : null}
@@ -51,7 +51,7 @@ export function SignInForm({ next }: { next: string }) {
       <button
         type="submit"
         disabled={pending}
-        className="inline-flex items-center justify-center gap-2 rounded-md bg-[#17473a] px-4 py-2 text-sm font-medium text-white hover:bg-[#11352c] disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-[var(--brand-hover)] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {pending ? <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden /> : null}
         Sign in

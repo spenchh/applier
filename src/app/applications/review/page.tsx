@@ -36,7 +36,7 @@ export default async function ReviewQueuePage() {
                 </div>
                 <div className="mt-5 flex gap-2">
                   <ButtonLink href={`/applications/${application.id}/tailor`}>Review</ButtonLink>
-                  <Link href={`/jobs/${application.jobPostingId}`} className="inline-flex items-center rounded-md border border-[var(--line)] bg-white px-4 py-2 text-sm font-medium hover:bg-[#f0f0ea]">
+                  <Link href={`/jobs/${application.jobPostingId}`} className="inline-flex items-center rounded-lg border border-[var(--line)] bg-[var(--surface)] px-4 py-2.5 text-sm font-medium shadow-sm transition hover:bg-[var(--surface-soft)]">
                     Job
                   </Link>
                 </div>

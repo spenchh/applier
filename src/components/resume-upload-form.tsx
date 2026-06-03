@@ -70,7 +70,7 @@ export function ResumeUploadForm() {
       </label>
       <button
         type="button"
-        className="grid min-h-36 place-items-center rounded-md border border-dashed border-[var(--line)] bg-stone-50 p-5 text-center hover:bg-stone-100"
+        className="grid min-h-36 place-items-center rounded-lg border border-dashed border-[var(--line)] bg-[var(--surface-soft)] p-5 text-center transition hover:bg-[var(--surface-warm)]"
         onClick={() => inputRef.current?.click()}
         onDragOver={(event) => event.preventDefault()}
         onDrop={(event) => {
@@ -99,7 +99,7 @@ export function ResumeUploadForm() {
       <button
         type="submit"
         disabled={status === "uploading"}
-        className="inline-flex items-center justify-center rounded-md bg-[#17473a] px-4 py-2 text-sm font-medium text-white hover:bg-[#11352c] disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex items-center justify-center rounded-lg bg-[var(--brand)] px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-[var(--brand-hover)] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {status === "uploading" ? "Uploading..." : "Upload and parse"}
       </button>

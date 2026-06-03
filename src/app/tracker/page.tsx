@@ -80,7 +80,7 @@ function OfferOverview({ offers }: { offers: Awaited<ReturnType<typeof listAppli
       </div>
       <div className="mt-4 grid gap-3">
         {offers.map((offer) => (
-          <div key={offer.id} className="flex flex-col gap-2 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm md:flex-row md:items-center md:justify-between">
+          <div key={offer.id} className="flex flex-col gap-2 rounded-lg border border-emerald-200 bg-emerald-50/70 p-3 text-sm shadow-sm md:flex-row md:items-center md:justify-between">
             <div>
               <p className="font-semibold text-emerald-950">{offer.jobPosting.company.name} - {offer.jobPosting.title}</p>
               <p className="text-emerald-900">Fit score {offer.fitScore}. Review tailored materials, questions, and submission notes before making a decision.</p>
@@ -97,7 +97,7 @@ function OfferOverview({ offers }: { offers: Awaited<ReturnType<typeof listAppli
 
 function OfferBox({ title, items }: { title: string; items: string[] }) {
   return (
-    <div className="rounded-md bg-[#fbfbf8] p-3">
+    <div className="rounded-lg bg-[var(--surface-soft)] p-3 shadow-sm">
       <p className="text-sm font-semibold">{title}</p>
       <ul className="mt-2 grid gap-1 text-sm text-stone-700">
         {items.map((item) => (

@@ -30,7 +30,7 @@ export default async function SubmissionPage({ params }: { params: Promise<{ id:
             <Checklist checked={application.jobPosting.sourceUrl !== null} label="Application URL saved" />
           </div>
           {application.jobPosting.sourceUrl ? (
-            <a className="mt-5 inline-flex rounded-md bg-[#17473a] px-4 py-2 text-sm font-medium text-white hover:bg-[#11352c]" href={application.jobPosting.sourceUrl} target="_blank" rel="noreferrer">
+            <a className="mt-5 inline-flex rounded-lg bg-[var(--brand)] px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-[var(--brand-hover)]" href={application.jobPosting.sourceUrl} target="_blank" rel="noreferrer">
               Open application URL
             </a>
           ) : null}
@@ -61,14 +61,14 @@ export default async function SubmissionPage({ params }: { params: Promise<{ id:
               <h2 className="text-lg font-semibold">Resume to copy</h2>
               <CopyButton value={resume.tailoredText} />
             </div>
-            <pre className="mt-4 max-h-96 overflow-auto whitespace-pre-wrap rounded-md bg-stone-50 p-4 text-sm">{resume.tailoredText}</pre>
+            <pre className="mt-4 max-h-96 overflow-auto whitespace-pre-wrap rounded-lg bg-[var(--surface-soft)] p-4 text-sm">{resume.tailoredText}</pre>
           </Panel>
         ) : null}
         <Panel>
           <h2 className="text-lg font-semibold">Answers</h2>
           <div className="mt-4 grid gap-3">
             {application.answers.map((answer) => (
-              <div key={answer.id} className="rounded-md border border-[var(--line)] p-3">
+              <div key={answer.id} className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-3 shadow-sm">
                 <div className="flex justify-between gap-3">
                   <p className="text-sm font-medium">{answer.jobQuestion?.questionText}</p>
                   <Badge tone={answer.truthCheckStatus === "supported" ? "good" : "warn"}>{answer.truthCheckStatus.replaceAll("_", " ")}</Badge>
@@ -88,7 +88,7 @@ export default async function SubmissionPage({ params }: { params: Promise<{ id:
 
 function Checklist({ checked, label }: { checked: boolean; label: string }) {
   return (
-    <div className="flex items-center justify-between rounded-md border border-[var(--line)] px-3 py-2">
+    <div className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-2 shadow-sm">
       <span>{label}</span>
       <Badge tone={checked ? "good" : "warn"}>{checked ? "ready" : "check"}</Badge>
     </div>

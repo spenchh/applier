@@ -20,23 +20,23 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
   const user = await currentUser();
   return (
     <div className="app-shell min-h-screen bg-[var(--background)]">
-      <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-[var(--line)] bg-[#fbfbf8] px-4 py-5 lg:block">
-        <Link href="/" className="flex items-center gap-2 px-2 text-xl font-semibold">
-          <span className="grid h-9 w-9 place-items-center rounded-md bg-[#17473a] text-white">IP</span>
+      <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-[var(--line)] bg-[var(--surface-soft)] px-4 py-5 lg:block">
+        <Link href="/" className="flex items-center gap-2 px-2 text-xl font-semibold text-[var(--foreground)]">
+          <span className="grid h-9 w-9 place-items-center rounded-lg bg-[var(--brand)] text-white shadow-sm">IP</span>
           InternPilot
         </Link>
-        <nav className="mt-8 grid gap-1">
+        <nav className="mt-8 grid gap-1.5">
           {nav.map((item) => {
             const Icon = item.icon;
             return (
-              <Link key={item.href} href={item.href} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-stone-700 hover:bg-[#ecece4] hover:text-[#1d211f]">
+              <Link key={item.href} href={item.href} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-stone-700 transition hover:bg-[var(--surface)] hover:text-[var(--foreground)] hover:shadow-sm">
                 <Icon className="h-4 w-4" aria-hidden />
                 {item.label}
               </Link>
             );
           })}
         </nav>
-        <div className="absolute inset-x-4 bottom-5 rounded-md border border-[var(--line)] bg-white p-3 text-sm">
+        <div className="absolute inset-x-4 bottom-5 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-3 text-sm shadow-[var(--shadow-soft)]">
           {user ? (
             <div className="grid gap-3">
               <div>
@@ -44,14 +44,14 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
                 <p className="truncate text-xs text-[var(--muted)]">{user.email}</p>
               </div>
               <form action={signOutAction}>
-                <button type="submit" className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm font-medium text-stone-700 hover:bg-[#ecece4]">
+                <button type="submit" className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm font-medium text-stone-700 transition hover:bg-[var(--surface-soft)]">
                   <LogOut className="h-4 w-4" aria-hidden />
                   Sign out
                 </button>
               </form>
             </div>
           ) : (
-            <Link href="/sign-in" className="flex items-center gap-2 rounded-md px-2 py-1.5 font-medium text-stone-700 hover:bg-[#ecece4]">
+            <Link href="/sign-in" className="flex items-center gap-2 rounded-lg px-2 py-1.5 font-medium text-stone-700 transition hover:bg-[var(--surface-soft)]">
               <LogIn className="h-4 w-4" aria-hidden />
               Sign in
             </Link>
@@ -59,7 +59,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
       <div className="lg:pl-64">
-        <header className="sticky top-0 z-10 border-b border-[var(--line)] bg-[#fbfbf8]/95 px-4 py-3 backdrop-blur lg:hidden">
+        <header className="sticky top-0 z-10 border-b border-[var(--line)] bg-[var(--surface-soft)]/95 px-4 py-3 backdrop-blur lg:hidden">
           <div className="flex items-center justify-between gap-3">
             <Link href="/" className="font-semibold">
               InternPilot
@@ -73,7 +73,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
             )}
           </div>
         </header>
-        <main className="mx-auto min-h-screen max-w-7xl px-4 py-6 sm:px-6 lg:px-8">{children}</main>
+        <main className="mx-auto min-h-screen max-w-7xl px-4 py-7 sm:px-6 lg:px-8">{children}</main>
       </div>
     </div>
   );

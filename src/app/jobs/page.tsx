@@ -21,12 +21,12 @@ export default async function JobsPage() {
       <div className="grid gap-6 xl:grid-cols-[.9fr_1.1fr]">
         <Panel>
           <h2 className="mb-4 text-lg font-semibold">Add job posting</h2>
-          <div className="mb-4 rounded-md border border-[var(--line)] bg-stone-50 p-3 text-sm text-stone-700">
+          <div className="mb-4 rounded-lg border border-[var(--line)] bg-[var(--surface-soft)] p-3 text-sm text-stone-700">
             <p className="font-medium">Current targets</p>
             <p>{targetRoles.length ? targetRoles.join(", ") : "Any role family"}</p>
             <p>{targetIndustries.length ? targetIndustries.join(", ") : "Any industry"}</p>
           </div>
-          <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
+          <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50/70 p-3 text-sm text-emerald-900">
             <p className="font-medium">Job-board inspired import</p>
             <p>Paste descriptions or URLs from LinkedIn, Indeed, Handshake, school boards, and company career pages. Restricted boards stay Manual Mode, but InternPilot will still parse requirements and tailor your materials.</p>
           </div>
@@ -81,7 +81,7 @@ export default async function JobsPage() {
             jobs.map((job) => {
               const risks = toList(job.riskFlagsJson);
               return (
-                <Link key={job.id} href={`/jobs/${job.id}`} className="block rounded-lg border border-[var(--line)] bg-white p-5 shadow-sm hover:bg-[#f8f8f2]">
+                <Link key={job.id} href={`/jobs/${job.id}`} className="block rounded-lg border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[var(--shadow-soft)] transition hover:bg-[var(--surface-soft)]">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-semibold">{job.title}</p>

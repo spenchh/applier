@@ -25,7 +25,7 @@ export function StatusSelect({ applicationId, value }: { applicationId: string; 
     <select
       defaultValue={value}
       disabled={pending}
-      className="rounded-md border border-[var(--line)] bg-white px-2 py-1 text-sm"
+      className="rounded-lg border border-[var(--line)] bg-[var(--surface)] px-2.5 py-1.5 text-sm outline-none ring-[var(--focus)] transition focus:border-[var(--brand)] focus:ring-4"
       onChange={(event) => {
         const status = event.target.value;
         startTransition(async () => {
