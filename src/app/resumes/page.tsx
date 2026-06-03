@@ -3,6 +3,8 @@ import { SubmitButton } from "@/components/submit-button";
 import { Badge, EmptyState, PageHeader, Panel, inputClass, labelClass } from "@/components/ui";
 import { getPrimaryProfile } from "@/lib/services/profile";
 
+export const dynamic = "force-dynamic";
+
 export default async function ResumesPage() {
   const profile = await getPrimaryProfile();
   return (
@@ -22,9 +24,13 @@ export default async function ResumesPage() {
                 <option value="software_engineering">Software engineering</option>
                 <option value="data_science">Data science</option>
                 <option value="product_management">Product management</option>
+                <option value="design_ux">Design / UX</option>
                 <option value="finance">Finance</option>
                 <option value="consulting">Consulting</option>
                 <option value="research">Research</option>
+                <option value="marketing">Marketing</option>
+                <option value="operations">Operations</option>
+                <option value="communications">Communications</option>
                 <option value="general_internship">General internship</option>
               </select>
             </label>

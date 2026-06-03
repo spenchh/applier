@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { getAIWrapperStatus } from "./ai-wrapper";
 import { adapterFor, chooseApplicationMode } from "./adapters";
 import { generateAnswerMock, parseJobPostingMock, truthCheckMaterial, type FactLike } from "./llm";
 import { canSubmitApplication } from "./services/application";
@@ -28,6 +29,19 @@ describe("InternPilot core behavior", () => {
     expect(parsed.company).toBe("Acme");
     expect(parsed.technologies).toContain("postgresql");
     expect(parsed.applicationQuestions[0]?.questionText).toContain("project");
+  });
+
+  it("parses non-tech role families without forcing a software template", () => {
+    const parsed = parseJobPostingMock({
+      company: "Northline Museum",
+      title: "Marketing Intern",
+      roleCategory: "marketing",
+      rawDescription: "Support social media campaigns, brand writing, event promotion, and stakeholder communication.",
+    });
+
+    expect(parsed.roleCategory).toBe("marketing");
+    expect(parsed.keywords).toContain("marketing");
+    expect(parsed.keywords).toContain("social media");
   });
 
   it("detects technologies when followed by punctuation", () => {
@@ -79,5 +93,11 @@ describe("InternPilot core behavior", () => {
     expect(isSensitiveQuestion("Will you now or in the future require visa sponsorship?")).toBe(true);
     const answer = generateAnswerMock("Will you now or in the future require visa sponsorship?", [fact]);
     expect(answer.truthCheckStatus).toBe("sensitive_requires_confirmation");
+  });
+
+  it("reports mock AI wrapper as locally configured", () => {
+    const status = getAIWrapperStatus({ provider: "mock" });
+    expect(status.configured).toBe(true);
+    expect(status.mode).toBe("local_mock");
   });
 });

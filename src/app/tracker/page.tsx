@@ -3,6 +3,8 @@ import { StatusSelect } from "@/components/status-select";
 import { Badge, ButtonLink, EmptyState, PageHeader, Panel, Score } from "@/components/ui";
 import { listApplications } from "@/lib/services/application";
 
+export const dynamic = "force-dynamic";
+
 export default async function TrackerPage() {
   const applications = await listApplications();
   return (

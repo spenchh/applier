@@ -6,6 +6,8 @@ import { listApplications } from "@/lib/services/application";
 import { listJobs } from "@/lib/services/job";
 import { getPrimaryProfile } from "@/lib/services/profile";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
   const [profile, jobs, applications, analytics] = await Promise.all([getPrimaryProfile(), listJobs(), listApplications(), getAnalytics()]);
   const ready = applications.filter((application) => application.status === "ready for review" || application.status === "approved");

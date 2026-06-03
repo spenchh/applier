@@ -3,6 +3,8 @@ import { PageHeader, Panel } from "@/components/ui";
 import { getPrimaryProfile } from "@/lib/services/profile";
 import { toList } from "@/lib/json";
 
+export const dynamic = "force-dynamic";
+
 export default async function OnboardingPage() {
   const profile = await getPrimaryProfile();
   return (

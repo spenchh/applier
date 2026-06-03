@@ -1,11 +1,13 @@
 import { prisma } from "../db";
 import { readJson, toList, writeJson } from "../json";
 import { generateAnswerMock, generateCoverLetterMock, generateTailoredResumeText } from "../llm";
+import { ensureDatabaseReady } from "../runtime-db";
 import { chooseApplicationMode } from "../adapters";
 import { calculateFit } from "./fit";
 import { getMasterResume } from "./resume";
 
 export async function generateApplicationPacket(jobPostingId: string, userProfileId: string) {
+  await ensureDatabaseReady();
   const profile = await prisma.userProfile.findUnique({
     where: { id: userProfileId },
     include: { facts: true },

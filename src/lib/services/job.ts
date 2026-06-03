@@ -1,6 +1,7 @@
 import { prisma } from "../db";
 import { writeJson } from "../json";
 import { parseJobPostingMock } from "../llm";
+import { ensureDatabaseReady } from "../runtime-db";
 import { chooseApplicationMode } from "../adapters";
 import { dedupeHash, detectAtsProvider, isRestrictedPlatform } from "../text";
 
@@ -9,9 +10,11 @@ export async function createJobFromInput(input: {
   sourceName?: string | null;
   company?: string | null;
   title?: string | null;
+  roleCategory?: string | null;
   location?: string | null;
   rawDescription: string;
 }) {
+  await ensureDatabaseReady();
   const parsed = parseJobPostingMock(input);
   const hash = dedupeHash({
     company: parsed.company,
@@ -78,6 +81,7 @@ export async function createJobFromInput(input: {
 }
 
 export async function listJobs() {
+  await ensureDatabaseReady();
   return prisma.jobPosting.findMany({
     include: {
       company: true,
@@ -89,6 +93,7 @@ export async function listJobs() {
 }
 
 export async function getJob(id: string) {
+  await ensureDatabaseReady();
   return prisma.jobPosting.findUnique({
     where: { id },
     include: {

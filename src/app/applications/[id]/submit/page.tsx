@@ -5,6 +5,8 @@ import { SubmitButton } from "@/components/submit-button";
 import { Badge, ButtonLink, PageHeader, Panel } from "@/components/ui";
 import { getApplication } from "@/lib/services/application";
 
+export const dynamic = "force-dynamic";
+
 export default async function SubmissionPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const application = await getApplication(id);

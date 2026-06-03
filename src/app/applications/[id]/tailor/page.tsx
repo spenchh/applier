@@ -7,6 +7,8 @@ import { readJson } from "@/lib/json";
 import type { KeywordCoverage, TruthCheck } from "@/lib/schemas";
 import { getApplication } from "@/lib/services/application";
 
+export const dynamic = "force-dynamic";
+
 export default async function TailoringPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const application = await getApplication(id);

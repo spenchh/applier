@@ -4,16 +4,26 @@ import { SubmitButton } from "@/components/submit-button";
 import { Badge, EmptyState, PageHeader, Panel, inputClass, labelClass } from "@/components/ui";
 import { toList } from "@/lib/json";
 import { listJobs } from "@/lib/services/job";
-import { isRestrictedPlatform } from "@/lib/text";
+import { getSettings } from "@/lib/services/settings";
+import { isRestrictedPlatform, roleCategories, roleCategoryLabel } from "@/lib/text";
+
+export const dynamic = "force-dynamic";
 
 export default async function JobsPage() {
-  const jobs = await listJobs();
+  const [jobs, settings] = await Promise.all([listJobs(), getSettings()]);
+  const targetRoles = toList(settings.targetRoleTypes);
+  const targetIndustries = toList(settings.targetIndustries);
   return (
     <>
       <PageHeader title="Job Inbox" eyebrow="Import and triage" />
       <div className="grid gap-6 xl:grid-cols-[.9fr_1.1fr]">
         <Panel>
           <h2 className="mb-4 text-lg font-semibold">Add job posting</h2>
+          <div className="mb-4 rounded-md border border-[var(--line)] bg-stone-50 p-3 text-sm text-stone-700">
+            <p className="font-medium">Current targets</p>
+            <p>{targetRoles.length ? targetRoles.join(", ") : "Any role family"}</p>
+            <p>{targetIndustries.length ? targetIndustries.join(", ") : "Any industry"}</p>
+          </div>
           <form action={createJobAction} className="grid gap-4">
             <label className={labelClass}>
               Source URL
@@ -27,6 +37,16 @@ export default async function JobsPage() {
               <label className={labelClass}>
                 Role title
                 <input name="title" className={inputClass} />
+              </label>
+              <label className={labelClass}>
+                Role family
+                <select name="roleCategory" className={inputClass} defaultValue="general_internship">
+                  {roleCategories.map((category) => (
+                    <option key={category} value={category}>
+                      {roleCategoryLabel(category)}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label className={labelClass}>
                 Location

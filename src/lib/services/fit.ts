@@ -27,7 +27,7 @@ export function calculateFit(job: JobPosting, facts: ProfileFact[]): FitAnalysis
     missingRequirements: missingKeywords,
     strongestEvidence,
     risks: riskFlags,
-    recommendedResumeTemplate: job.title.toLowerCase().includes("data") ? "data_science" : "software_engineering",
+    recommendedResumeTemplate: job.title.toLowerCase().includes("data") ? "data_science" : job.title.toLowerCase().includes("software") ? "software_engineering" : "general_internship",
     suggestedPositioning: score >= 70 ? "Lead with directly matched project and internship evidence." : "Keep the application honest and add missing facts before making stronger claims.",
   };
 }

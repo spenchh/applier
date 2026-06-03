@@ -1,5 +1,5 @@
 import { parsedJobSchema, type KeywordCoverage, type ParsedJob, type TruthCheck } from "./schemas";
-import { detectRiskFlags, extractKeywords, extractTechnologies, isSensitiveQuestion, splitInterestingLines, unique } from "./text";
+import { detectRiskFlags, extractKeywords, extractTechnologies, inferRoleCategory, isSensitiveQuestion, splitInterestingLines, unique } from "./text";
 
 export type FactLike = {
   id: string;
@@ -18,12 +18,14 @@ export function parseJobPostingMock(input: {
   sourceUrl?: string | null;
   company?: string | null;
   title?: string | null;
+  roleCategory?: string | null;
   location?: string | null;
 }): ParsedJob {
   const text = input.rawDescription;
+  const analysisText = [input.title, input.company, input.roleCategory, text].filter(Boolean).join("\n");
   const lines = splitInterestingLines(text);
-  const technologies = extractTechnologies(text);
-  const keywords = extractKeywords(text);
+  const technologies = extractTechnologies(analysisText);
+  const keywords = extractKeywords(analysisText);
   const questions = lines
     .filter((line) => /\?$/.test(line) || /question|answer|tell us|why/i.test(line))
     .map((line) => ({
@@ -45,10 +47,11 @@ export function parseJobPostingMock(input: {
   const parsed = {
     company: input.company || inferCompany(text) || "Unknown Company",
     title: input.title || inferTitle(text) || "Internship Role",
+    roleCategory: input.roleCategory || inferRoleCategory(input.title || inferTitle(text) || "", text),
     location: input.location || inferLocation(text),
     workplaceType: /remote/i.test(text) ? "remote" : /hybrid/i.test(text) ? "hybrid" : /onsite|on-site/i.test(text) ? "onsite" : undefined,
     internshipTerm: /summer/i.test(text) ? "summer" : /fall/i.test(text) ? "fall" : /spring/i.test(text) ? "spring" : undefined,
-    responsibilities: lines.filter((line) => /build|analyze|collaborate|develop|design|test|support|create/i.test(line)).slice(0, 5),
+    responsibilities: lines.filter((line) => /build|analyze|collaborate|develop|design|test|support|create|research|write|present|model|coordinate|communicate|manage|plan|evaluate/i.test(line)).slice(0, 5),
     requiredQualifications: lines.filter((line) => /required|must|minimum|currently|degree|experience|proficiency/i.test(line)).slice(0, 6),
     preferredQualifications: lines.filter((line) => /preferred|nice|plus|bonus|familiar/i.test(line)).slice(0, 6),
     technologies,
@@ -105,9 +108,9 @@ export function generateTailoredResumeText(input: {
     [input.email, input.location].filter(Boolean).join(" | "),
     "",
     "SUMMARY",
-    `Student candidate targeting ${input.jobTitle} at ${input.company}, emphasizing verified project, internship, and leadership experience.`,
+    `Student candidate targeting ${input.jobTitle} at ${input.company}, emphasizing verified experience, projects, coursework, and leadership that match the role.`,
     "",
-    "EXPERIENCE AND PROJECTS",
+    "RELEVANT EXPERIENCE AND PROJECTS",
     ...factLines,
     "",
     "SKILLS",
@@ -141,7 +144,7 @@ export function generateCoverLetterMock(input: {
   const facts = input.facts.filter((fact) => fact.coverLetterAllowed).slice(0, 2);
   const evidence = facts.map((fact) => `${fact.title}: ${fact.description}`).join(" ");
   return {
-    text: `Dear ${input.company} recruiting team,\n\nI am interested in the ${input.role} internship because it aligns with the verified work I have been building through coursework, projects, and early professional experience. ${evidence}\n\nI would welcome the chance to contribute carefully, learn quickly, and bring a grounded technical perspective to your team.\n\nSincerely,\n${input.preferredName}`,
+    text: `Dear ${input.company} recruiting team,\n\nI am interested in the ${input.role} internship because it aligns with the verified work I have been building through coursework, projects, leadership, and early professional experience. ${evidence}\n\nI would welcome the chance to contribute carefully, learn quickly, and bring a grounded, honest perspective to your team.\n\nSincerely,\n${input.preferredName}`,
     supportingFactIds: facts.map((fact) => fact.id),
   };
 }

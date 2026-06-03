@@ -2,12 +2,14 @@ import type { Application } from "@prisma/client";
 import { adapterFor } from "../adapters";
 import { prisma } from "../db";
 import { writeJson } from "../json";
+import { ensureDatabaseReady } from "../runtime-db";
 
 export function canSubmitApplication(application: Pick<Application, "approvedAt" | "status">) {
   return Boolean(application.approvedAt) && ["approved", "submitted"].includes(application.status);
 }
 
 export async function approveApplication(applicationId: string) {
+  await ensureDatabaseReady();
   const application = await prisma.application.update({
     where: { id: applicationId },
     data: {
@@ -29,6 +31,7 @@ export async function approveApplication(applicationId: string) {
 }
 
 export async function markSubmitted(applicationId: string) {
+  await ensureDatabaseReady();
   const application = await prisma.application.findUniqueOrThrow({ where: { id: applicationId } });
   if (!canSubmitApplication(application)) {
     throw new Error("Application must be approved before it can be marked submitted.");
@@ -53,6 +56,7 @@ export async function markSubmitted(applicationId: string) {
 }
 
 export async function attemptAdapterSubmission(applicationId: string) {
+  await ensureDatabaseReady();
   const application = await prisma.application.findUniqueOrThrow({ where: { id: applicationId } });
   const adapter = adapterFor(application.applicationMode);
   const result = await adapter.submitApplication(application);
@@ -70,6 +74,7 @@ export async function attemptAdapterSubmission(applicationId: string) {
 }
 
 export async function updateApplicationStatus(applicationId: string, status: string) {
+  await ensureDatabaseReady();
   return prisma.application.update({
     where: { id: applicationId },
     data: { status },
@@ -77,6 +82,7 @@ export async function updateApplicationStatus(applicationId: string, status: str
 }
 
 export async function listApplications() {
+  await ensureDatabaseReady();
   return prisma.application.findMany({
     include: {
       jobPosting: { include: { company: true } },
@@ -91,6 +97,7 @@ export async function listApplications() {
 }
 
 export async function getApplication(id: string) {
+  await ensureDatabaseReady();
   return prisma.application.findUnique({
     where: { id },
     include: {

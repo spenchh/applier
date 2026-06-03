@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { formBool, formString, fromCsv } from "@/lib/json";
+import { ensureDatabaseReady } from "@/lib/runtime-db";
 import { jobInputSchema, profileFactSchema, profileSchema, resumeSchema } from "@/lib/schemas";
 import { approveApplication, markSubmitted, updateApplicationStatus } from "@/lib/services/application";
 import { createJobFromInput } from "@/lib/services/job";
@@ -82,6 +83,7 @@ export async function createJobAction(formData: FormData) {
     sourceName: formString(formData, "sourceName"),
     company: formString(formData, "company"),
     title: formString(formData, "title"),
+    roleCategory: formString(formData, "roleCategory"),
     location: formString(formData, "location"),
     rawDescription: formString(formData, "rawDescription"),
   });
@@ -121,7 +123,12 @@ export async function updateStatusAction(applicationId: string, status: string) 
 export async function updateSettingsAction(formData: FormData) {
   await updateSettings({
     llmProvider: formString(formData, "llmProvider") || "mock",
+    aiModel: formString(formData, "aiModel"),
+    aiInstructions: formString(formData, "aiInstructions"),
     defaultResumeTemplate: formString(formData, "defaultResumeTemplate") || "software_engineering",
+    targetRoleTypes: fromCsv(formData.get("targetRoleTypes")),
+    targetIndustries: fromCsv(formData.get("targetIndustries")),
+    excludedKeywords: fromCsv(formData.get("excludedKeywords")),
     disableSubmissionAdapters: formBool(formData, "disableSubmissionAdapters"),
     maxApplicationsPerDay: Number(formString(formData, "maxApplicationsPerDay") || 10),
   });
@@ -130,13 +137,33 @@ export async function updateSettingsAction(formData: FormData) {
 
 export async function deleteAllDataAction(_formData: FormData) {
   void _formData;
+  await ensureDatabaseReady();
   await prisma.auditLog.deleteMany();
   await prisma.userProfile.deleteMany();
   await prisma.company.deleteMany();
   await prisma.appSettings.upsert({
     where: { id: "singleton" },
-    update: { requireReview: true, llmProvider: "mock", disableSubmissionAdapters: false },
-    create: { id: "singleton", requireReview: true, llmProvider: "mock", disableSubmissionAdapters: false },
+    update: {
+      requireReview: true,
+      llmProvider: "mock",
+      aiModel: null,
+      aiInstructions: null,
+      defaultResumeTemplate: "general_internship",
+      targetRoleTypes: "[]",
+      targetIndustries: "[]",
+      excludedKeywords: "[]",
+      disableSubmissionAdapters: false,
+    },
+    create: {
+      id: "singleton",
+      requireReview: true,
+      llmProvider: "mock",
+      defaultResumeTemplate: "general_internship",
+      targetRoleTypes: "[]",
+      targetIndustries: "[]",
+      excludedKeywords: "[]",
+      disableSubmissionAdapters: false,
+    },
   });
   revalidatePath("/");
   redirect("/");

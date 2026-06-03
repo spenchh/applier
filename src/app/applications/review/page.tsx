@@ -2,6 +2,8 @@ import Link from "next/link";
 import { Badge, ButtonLink, EmptyState, PageHeader, Panel, Score } from "@/components/ui";
 import { listApplications } from "@/lib/services/application";
 
+export const dynamic = "force-dynamic";
+
 export default async function ReviewQueuePage() {
   const applications = await listApplications();
   const queue = applications.filter((application) => ["drafted", "ready for review", "approved", "needs info"].includes(application.status));

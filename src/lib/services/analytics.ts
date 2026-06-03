@@ -1,6 +1,8 @@
 import { prisma } from "../db";
+import { ensureDatabaseReady } from "../runtime-db";
 
 export async function getAnalytics() {
+  await ensureDatabaseReady();
   const applications = await prisma.application.findMany({
     include: {
       jobPosting: {

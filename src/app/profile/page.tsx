@@ -6,6 +6,8 @@ import { Badge, EmptyState, PageHeader, Panel, inputClass, labelClass } from "@/
 import { toList } from "@/lib/json";
 import { getPrimaryProfile } from "@/lib/services/profile";
 
+export const dynamic = "force-dynamic";
+
 export default async function ProfilePage() {
   const profile = await getPrimaryProfile();
 

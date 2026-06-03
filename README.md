@@ -7,6 +7,8 @@ InternPilot is a local-first internship application command center. It helps a s
 - Stores profile basics, resumes, verified facts, skills, projects, education, work history, and eligibility facts.
 - Imports postings from pasted descriptions, manual fields, URLs, and official ATS-style URLs where appropriate.
 - Parses jobs with a mock LLM provider that works without paid API keys.
+- Lets users set target role families and industries, including software, data, product, design/UX, marketing, finance, consulting, research, operations, policy/legal, communications, sales, HR, and general internships.
+- Provides an AI wrapper configuration layer for mock, OpenAI, or Anthropic-backed generation while keeping truth checks provider-independent.
 - Scores fit against the Truth Vault.
 - Generates tailored resume text, cover letters, application answers, recruiter-style notes, truth checks, and keyword coverage.
 - Requires explicit review and approval before submission or export.
@@ -48,13 +50,23 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Database And Seed Data
 
-The Prisma schema is in `prisma/schema.prisma`. Seed data creates a fictional computer science student, a master resume, four verified facts, two internship postings, and sample generated applications.
+The Prisma schema is in `prisma/schema.prisma`. Seed data is blank by default. It clears local profiles, resumes, jobs, applications, and audit logs, then initializes app settings.
 
 ```bash
 npm run db:seed
 ```
 
+Optional demo data exists for development only:
+
+```bash
+SEED_DEMO=true npm run db:seed
+```
+
+The production app should not include demo profiles or demo jobs. `.vercelignore` excludes local `.env` files and SQLite database files from CLI deployments.
+
 Local database files and generated storage are ignored by git.
+
+On Vercel, the MVP can initialize an empty SQLite database in `/tmp` so the app boots cleanly, but that storage is ephemeral. Configure a persistent Postgres-compatible database before relying on hosted data across sessions or users.
 
 ## MVP Workflow
 
@@ -93,6 +105,8 @@ Phase 1:
 - Resume tailoring
 - Truth checking
 - Tracker
+- Role-family and industry targeting
+- AI wrapper settings with mock mode
 
 Phase 2:
 - Better PDF/DOCX export
@@ -100,6 +114,7 @@ Phase 2:
 - Calendar reminders
 - CSV import/export
 - Contact/referral CRM
+- Persistent production database integration such as Postgres
 
 Phase 3:
 - Official ATS adapters

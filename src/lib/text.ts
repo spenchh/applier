@@ -20,7 +20,7 @@ const knownAtsHosts: Record<string, string> = {
   "jobs.smartrecruiters.com": "smartrecruiters",
 };
 
-const technologyTerms = [
+const keywordTerms = [
   "python",
   "javascript",
   "typescript",
@@ -42,6 +42,42 @@ const technologyTerms = [
   "api",
   "rest",
   "graphql",
+  "figma",
+  "ux",
+  "user research",
+  "wireframes",
+  "content strategy",
+  "marketing",
+  "social media",
+  "campaigns",
+  "brand",
+  "copywriting",
+  "finance",
+  "financial modeling",
+  "valuation",
+  "accounting",
+  "excel",
+  "consulting",
+  "market research",
+  "strategy",
+  "operations",
+  "process improvement",
+  "supply chain",
+  "policy",
+  "public policy",
+  "legal",
+  "communications",
+  "writing",
+  "research",
+  "qualitative",
+  "quantitative",
+  "customer success",
+  "sales",
+  "business development",
+  "hr",
+  "people operations",
+  "event planning",
+  "project management",
 ];
 
 export function normalizeText(value: string): string {
@@ -77,7 +113,7 @@ export function tokenize(value: string): string[] {
 
 export function extractTechnologies(text: string): string[] {
   const normalized = ` ${text.toLowerCase()} `;
-  return technologyTerms.filter((term) => {
+  return keywordTerms.filter((term) => {
     const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     return new RegExp(`(^|[^a-z0-9+#])${escaped}([^a-z0-9+#]|$)`, "i").test(normalized);
   });
@@ -101,9 +137,66 @@ export function extractKeywords(text: string): string[] {
       "automation",
       "analytics",
       "database",
+      "design",
+      "marketing",
+      "finance",
+      "operations",
+      "strategy",
+      "policy",
+      "communications",
+      "sales",
+      "research",
+      "customer",
+      "writing",
+      "presentation",
+      "stakeholder",
     ].includes(token),
   );
   return unique([...technologies, ...common]).slice(0, 18);
+}
+
+export const roleCategories = [
+  "software_engineering",
+  "data_analytics",
+  "product_management",
+  "design_ux",
+  "marketing",
+  "finance",
+  "consulting",
+  "research",
+  "operations",
+  "policy_legal",
+  "communications",
+  "sales_business_development",
+  "people_hr",
+  "general_internship",
+] as const;
+
+export function inferRoleCategory(title: string, description = ""): string {
+  const value = `${title} ${description}`.toLowerCase();
+  if (/software|developer|frontend|backend|full.?stack|engineering/.test(value)) return "software_engineering";
+  if (/data|analytics|analyst|business intelligence|sql|tableau/.test(value)) return "data_analytics";
+  if (/product manager|product management|pm intern/.test(value)) return "product_management";
+  if (/design|ux|ui|figma|user research|creative/.test(value)) return "design_ux";
+  if (/marketing|brand|campaign|social media|growth/.test(value)) return "marketing";
+  if (/finance|investment|accounting|valuation|treasury/.test(value)) return "finance";
+  if (/consulting|strategy|case|market research/.test(value)) return "consulting";
+  if (/research|lab|policy research|clinical/.test(value)) return "research";
+  if (/operations|supply chain|logistics|process/.test(value)) return "operations";
+  if (/policy|legal|government|public affairs/.test(value)) return "policy_legal";
+  if (/communications|writing|editorial|content|public relations|pr\b/.test(value)) return "communications";
+  if (/sales|business development|account|customer success/.test(value)) return "sales_business_development";
+  if (/human resources|people|talent|recruiting/.test(value)) return "people_hr";
+  return "general_internship";
+}
+
+export function roleCategoryLabel(value: string): string {
+  return value
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ")
+    .replace("Ux", "UX")
+    .replace("Hr", "HR");
 }
 
 export function detectRiskFlags(text: string, sourceUrl?: string | null): string[] {

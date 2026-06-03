@@ -1,6 +1,8 @@
 import { PageHeader, Panel } from "@/components/ui";
 import { getAnalytics } from "@/lib/services/analytics";
 
+export const dynamic = "force-dynamic";
+
 export default async function AnalyticsPage() {
   const analytics = await getAnalytics();
   return (

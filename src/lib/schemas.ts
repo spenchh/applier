@@ -53,6 +53,7 @@ export const jobInputSchema = z.object({
   sourceName: z.string().optional(),
   company: z.string().optional(),
   title: z.string().optional(),
+  roleCategory: z.string().optional(),
   location: z.string().optional(),
   rawDescription: z.string().min(20),
 });
@@ -60,6 +61,7 @@ export const jobInputSchema = z.object({
 export const parsedJobSchema = z.object({
   company: z.string(),
   title: z.string(),
+  roleCategory: z.string().default("general_internship"),
   location: z.string().optional(),
   workplaceType: z.string().optional(),
   internshipTerm: z.string().optional(),

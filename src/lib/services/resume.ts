@@ -1,6 +1,7 @@
 import { prisma } from "../db";
 import { parseResumeMock } from "../llm";
 import { writeJson } from "../json";
+import { ensureDatabaseReady } from "../runtime-db";
 
 export async function createResume(input: {
   userProfileId: string;
@@ -9,6 +10,7 @@ export async function createResume(input: {
   rawText: string;
   isMaster?: boolean;
 }) {
+  await ensureDatabaseReady();
   if (input.isMaster) {
     await prisma.resume.updateMany({
       where: { userProfileId: input.userProfileId },
@@ -40,6 +42,7 @@ export async function createResume(input: {
 }
 
 export async function getMasterResume(userProfileId: string) {
+  await ensureDatabaseReady();
   const master = await prisma.resume.findFirst({
     where: { userProfileId, isMaster: true },
     orderBy: { updatedAt: "desc" },

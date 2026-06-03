@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { listApplications } from "@/lib/services/application";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const applications = await listApplications();
   const rows = [

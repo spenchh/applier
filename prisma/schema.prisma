@@ -262,7 +262,12 @@ model FollowUpTask {
 model AppSettings {
   id                        String   @id @default("singleton")
   llmProvider               String   @default("mock")
+  aiModel                   String?
+  aiInstructions            String?
   defaultResumeTemplate     String   @default("software_engineering")
+  targetRoleTypes           String   @default("[]")
+  targetIndustries          String   @default("[]")
+  excludedKeywords          String   @default("[]")
   disableSubmissionAdapters Boolean  @default(false)
   requireReview             Boolean  @default(true)
   maxApplicationsPerDay     Int      @default(10)

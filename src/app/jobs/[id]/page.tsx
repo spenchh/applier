@@ -3,15 +3,19 @@ import { generatePacketAction } from "@/app/actions";
 import { SubmitButton } from "@/components/submit-button";
 import { Badge, ButtonLink, PageHeader, Panel, Score } from "@/components/ui";
 import { readJson, toList } from "@/lib/json";
+import type { ParsedJob } from "@/lib/schemas";
 import { calculateFit } from "@/lib/services/fit";
 import { getJob } from "@/lib/services/job";
 import { getPrimaryProfile } from "@/lib/services/profile";
-import { isRestrictedPlatform } from "@/lib/text";
+import { isRestrictedPlatform, roleCategoryLabel } from "@/lib/text";
+
+export const dynamic = "force-dynamic";
 
 export default async function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const [job, profile] = await Promise.all([getJob(id), getPrimaryProfile()]);
   if (!job) notFound();
+  const parsed = readJson<Partial<ParsedJob>>(job.parsedJson, {});
   const fit = profile ? calculateFit(job, profile.facts) : null;
   const existing = job.applications[0];
 
@@ -27,6 +31,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
           <Panel>
             <div className="flex flex-wrap items-center gap-2">
               {job.location ? <Badge>{job.location}</Badge> : null}
+              {parsed.roleCategory ? <Badge tone="info">{roleCategoryLabel(parsed.roleCategory)}</Badge> : null}
               {job.workplaceType ? <Badge tone="info">{job.workplaceType}</Badge> : null}
               {job.internshipTerm ? <Badge tone="info">{job.internshipTerm}</Badge> : null}
               {isRestrictedPlatform(job.sourceUrl) ? <Badge tone="warn">restricted platform: manual only</Badge> : null}

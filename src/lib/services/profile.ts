@@ -1,8 +1,10 @@
 import { prisma } from "../db";
 import { writeJson } from "../json";
+import { ensureDatabaseReady } from "../runtime-db";
 import { parseDate } from "./shared";
 
 export async function getPrimaryProfile() {
+  await ensureDatabaseReady();
   return prisma.userProfile.findFirst({
     include: {
       facts: {
@@ -16,6 +18,7 @@ export async function getPrimaryProfile() {
 }
 
 export async function ensureProfile() {
+  await ensureDatabaseReady();
   const existing = await getPrimaryProfile();
   if (existing) return existing;
   return prisma.userProfile.create({
@@ -56,6 +59,7 @@ export async function upsertProfile(input: {
   linkedinUrl?: string;
   websiteUrl?: string;
 }) {
+  await ensureDatabaseReady();
   const existing = await prisma.userProfile.findFirst();
   const data = {
     legalName: input.legalName,
@@ -114,6 +118,7 @@ export async function createProfileFact(input: {
   answersAllowed?: boolean;
   verified?: boolean;
 }) {
+  await ensureDatabaseReady();
   const fact = await prisma.profileFact.create({
     data: {
       userProfileId: input.userProfileId,
