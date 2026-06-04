@@ -67,8 +67,8 @@ export default async function SettingsPage() {
           <div className="mt-4 grid gap-3 text-sm text-stone-700">
             <p>Connections use provider sign-in and OAuth consent. Momentum never asks for your GitHub, Google, Microsoft, or Canvas password.</p>
             <p>Provider access tokens are used during the sync callback and are not stored long-term by default. Reconnect when you want to refresh data.</p>
-            <p>Calendar import works without OAuth through an iCal/ICS URL or pasted calendar export. Momentum imports the events and does not store the calendar URL.</p>
-            <p>Public GitHub sync works by username. Private GitHub repositories, Google Calendar, Outlook, and Canvas require app owner OAuth credentials in Vercel before provider sign-in can complete.</p>
+            <p>Calendar import works without OAuth through a Canvas Calendar Feed, iCal/ICS URL, or pasted calendar export. Momentum imports the events and does not store the calendar URL.</p>
+            <p>Public GitHub sync works by username. Private GitHub repositories and direct Google, Outlook, or Canvas provider sign-in require app owner OAuth credentials in Vercel.</p>
             <p>Simplify and Handshake are handled through paste/import workflows because that is safer and more reliable than scraping.</p>
             <p>Database: SQLite through `DATABASE_URL`; on Vercel fallback storage is `/tmp`, so use a managed database before depending on this for long-term production data.</p>
           </div>

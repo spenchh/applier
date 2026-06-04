@@ -658,7 +658,8 @@ async function readCalendarFeed(input: { calendarUrl?: string; calendarText?: st
   } catch {
     throw new Error("Add a valid calendar URL.");
   }
-  if (url.protocol !== "https:" && url.protocol !== "http:") throw new Error("Calendar URL must start with http or https.");
+  if (url.protocol === "webcal:") url.protocol = "https:";
+  if (url.protocol !== "https:" && url.protocol !== "http:") throw new Error("Calendar URL must start with http, https, or webcal.");
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 12_000);
